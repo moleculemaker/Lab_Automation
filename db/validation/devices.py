@@ -1,8 +1,22 @@
 from mongodb_helper import MongoDBHelper
+import os
+
+def load_env(file_path=".env"):
+    if os.path.exists(file_path):
+        with open(file_path, "r") as f:
+            for line in f:
+                if "=" in line and not line.strip().startswith("#"):
+                    key, value = line.strip().split("=", 1)
+                    os.environ[key] = value
+
+load_env()
+
+mongo_uri = os.environ.get("MONGO_URI")
+mongo_db_name = os.environ.get("MONGO_DB_NAME")
 
 mongo = MongoDBHelper(
-    "mongodb+srv://ppahuja2:s5eMFr1js8iEcMt8@diaogroup.nrcgqsq.mongodb.net/?retryWrites=true&w=majority",
-    "diaogroup",
+    mongo_uri,
+    mongo_db_name,
 )
 
 db = mongo.db
