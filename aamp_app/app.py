@@ -17,6 +17,7 @@ from console_interceptor import ConsoleInterceptor
 from gridfs import GridFS
 import base64
 
+from db.validation import solutions, films, devices
 try:
     import serial.tools.list_ports
 except ImportError:
@@ -76,6 +77,10 @@ else:
 #     "diaogroup",
 # )
 mongo_gridfs = GridFS(mongo.db, collection="recipes")
+
+solutions.init_collection()
+devices.init_collection()
+films.init_collection()
 
 app = dash.Dash(
     __name__,
@@ -140,22 +145,29 @@ def print_pagename(url):  # all pages
 
 
 def update_upstream_recipe_dict():
-    print("update_upstream_recipe_dict")
-    if "document" in list(com.__dict__.keys()):
-        recipe_dict = com.get_recipe()
-        com.document["recipe_dict"] = {
-            "devices": recipe_dict[0],
-            "commands": recipe_dict[1],
-            "execution_options": recipe_dict[2],
+    if not hasattr(com, 'document'):
+        # create_new_recipe_doc(n, "/load-recipe", "testfile")
+        com.document = {
+            '_id': ObjectId(),
+            'recipe_dict': {
+                'devices': [],
+                'commands': [],
+                'execution_options': []
+            }
         }
-        mongo.db["recipes"].update_one(
-            {"_id": com.document["_id"]}, {"$set": com.document}
-        )
-        print("successfully updated recipe_dict upstream")
-        return True
-    else:
-        print("com.document not found")
-        return False
+    recipe_dict = com.get_recipe()
+    com.document['recipe_dict'] = {
+        'devices': recipe_dict[0],
+        'commands': recipe_dict[1],
+        'execution_options': recipe_dict[2]
+    }
+    mongo.db['recipes'].update_one(
+        {'_id': com.document['_id']}, 
+        {'$set': com.document}, 
+        upsert=True
+    )
+    return True
+
 
 
 def update_execution_upstream(execution):

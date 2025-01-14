@@ -91,4 +91,4 @@ def init_collection():
     try:
         db.create_collection(collection_name, **collection_options)
     except CollectionInvalid:
-        print("Error with creating solutions collection")
+        print("Error with creating films collection, it probably already exists")

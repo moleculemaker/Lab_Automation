@@ -11,7 +11,7 @@ from commands.utility_commands import LoopStartCommand, LoopEndCommand
 import inspect
 import util
 
-
+from bson.objectid import ObjectId
 # Representer.add_representer(ABCMeta, Representer.represent_name)
 
 # Should move loop interpretation to invoker?
@@ -642,6 +642,15 @@ class CommandSequence:
         self.execution_options = recipe_dict["execution_options"]
 
     def add_device_from_dict(self, device_type, device_dict):
+        if not hasattr(self, 'document'):
+            self.document = {
+                '_id': ObjectId(),
+                'recipe_dict': {
+                    'devices': [],
+                    'commands': [],
+                    'execution_options': []
+                }
+            }
         self.add_device(util.devices_ref_redundancy[device_type]["obj"](**device_dict))
         self.update_device_by_name()
 

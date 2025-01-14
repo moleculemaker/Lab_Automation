@@ -24,29 +24,28 @@ def init_collection():
     db = mongo.db
 
 
-    film_dict = {
+    solution_dict = {
         "metadata": {
             "solvent": "string",
-            "concentration": "float",
-            "printing_speed": "float",
-            "printing_temperature": "float",
+            "concentration": 0.3,
         },
         "result": {
-            "uv_vis": ["object_id", "null"],
-            "t80": ["float", "null"],
+            "uv_vis": None,
+            "t80": 0.3,
         },
     }
 
 
-    film_dict_schema = {
+
+    json_schema = {
         "bsonType": "object",
-        "title": "Film Object Validation",
+        "title": "Solution Object Validation",
         "required": ["metadata", "result"],
         "properties": {
             "metadata": {
                 "bsonType": "object",
                 "title": "Metadata Object Validation",
-                "required": ["solvent", "concentration", "printing_speed", "printing_temperature"],
+                "required": ["solvent", "concentration"],
                 "properties": {
                     "solvent": {
                         "bsonType": "string",
@@ -55,14 +54,6 @@ def init_collection():
                     "concentration": {
                         "bsonType": "double",
                         "description": "'concentration' must be a double and is required",
-                    },
-                    "printing_speed": {
-                        "bsonType": "double",
-                        "description": "'printing_speed' must be a double and is required",
-                    },
-                    "printing_temperature": {
-                        "bsonType": "double",
-                        "description": "'printing_temperature' must be a double and is required",
                     },
                 },
             },
@@ -86,9 +77,9 @@ def init_collection():
 
 
 
-    collection_name = "film"
-    collection_options = {"validator": {"$jsonSchema": film_dict_schema}}
+    collection_name = "solutions"
+    collection_options = {"validator": {"$jsonSchema": json_schema}}
     try:
         db.create_collection(collection_name, **collection_options)
     except CollectionInvalid:
-        print("Error with creating solutions collection")
+        print("Error with creating solutions collection, it probably already exists")
