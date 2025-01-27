@@ -1,3 +1,4 @@
+from datetime import datetime
 from command_sequence import CommandSequence
 from command_invoker import CommandInvoker
 import json
@@ -149,11 +150,14 @@ def update_upstream_recipe_dict():
         # create_new_recipe_doc(n, "/load-recipe", "testfile")
         com.document = {
             '_id': ObjectId(),
+            'file_name': 'testfile',
             'recipe_dict': {
                 'devices': [],
                 'commands': [],
                 'execution_options': []
-            }
+            },
+            'dash_friendly': True,
+            'executions': []
         }
     recipe_dict = com.get_recipe()
     com.document['recipe_dict'] = {
@@ -314,6 +318,7 @@ def get_document_from_db(n_clicks, filename):  # homepage
 def create_new_recipe_doc(n, url, name):
     if str(url) == "/load-recipe":
         print("create_new_recipe_doc")
+        name = f"Recipe_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         mongo.db["recipes"].insert_one(
             {
                 "file_name": name,
@@ -1983,7 +1988,8 @@ def open_fill_manual_control_serial(n):
 def fill_database_db_dropdown(n, url):
     if str(url) == "/database":
         print("fill_database_db_dropdown")
-        return list(mongo.client.list_database_names())
+        # temporary provision to not expose my other databases in demos
+        return [x for x in list(mongo.client.list_database_names()) if x == "aamp_test"]
 
 
 @app.callback(
