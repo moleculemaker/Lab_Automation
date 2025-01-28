@@ -18,7 +18,7 @@ from console_interceptor import ConsoleInterceptor
 from gridfs import GridFS
 import base64
 
-from db.validation import solutions, films, devices
+from db.validation import solutions, films, devices, recipes
 try:
     import serial.tools.list_ports
 except ImportError:
@@ -82,6 +82,7 @@ mongo_gridfs = GridFS(mongo.db, collection="recipes")
 solutions.init_collection()
 devices.init_collection()
 films.init_collection()
+recipes.init_collection()
 
 app = dash.Dash(
     __name__,
@@ -211,7 +212,7 @@ def fetch_recipe_list(n_clicks):  # homepage
     )
     print("fetch_recipe_list")
     data = []
-    for doc in docs:
+    for doc in reversed(list(docs)):
         file_name = doc.get("file_name", "")
         posix_friendly = doc.get("posix_friendly", True)
         dash_friendly = doc.get("dash_friendly", False)
@@ -334,7 +335,7 @@ def create_new_recipe_doc(n, url, name):
                 "executions": [],
             }
         )
-
+        fetch_recipe_list(1)
         return [True, "Recipe created", "success", 10000]
 
 
@@ -1988,7 +1989,7 @@ def open_fill_manual_control_serial(n):
 def fill_database_db_dropdown(n, url):
     if str(url) == "/database":
         print("fill_database_db_dropdown")
-        # temporary provision to not expose my other databases in demos
+        # temporary provision to not expose other databases in demos
         return [x for x in list(mongo.client.list_database_names()) if x == "aamp_test"]
 
 
@@ -2068,13 +2069,19 @@ def fill_database_collection_schema(collection, db, url):
         print("fill_database_collection_schema")
         if collection is not None and collection != "" and db is not None and db != "":
             try:
-                schema = (
-                    mongo.client[db].get_collection(collection).options()["validator"]
-                )
-                schema = process_schema(schema)
-                return render_dict(schema)
+                print("Colln info:")
+                print(mongo.client[db].get_collection(collection))
+                options = mongo.client[db].get_collection(collection).options()
+                if "validator" in options:
+                    schema = options["validator"]
+                    schema = process_schema(schema)
+                    return render_dict(schema)
+                else:
+                    return [""]
             except Exception as e:
+                print(f"Error retrieving schema: {e}")
                 return ["Validation rules missing or something went wrong."]
+
     return []
 
 

@@ -82,4 +82,4 @@ def init_collection():
     try:
         db.create_collection(collection_name, **collection_options)
     except CollectionInvalid:
-        print("Error with creating solutions collection, it probably already exists")
+        print("solutions collection already exists")
