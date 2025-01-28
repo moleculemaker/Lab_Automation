@@ -90,7 +90,9 @@ def init_collection():
 
 
     collection_name = "recipes"
-    collection_options = {"validator": {"$jsonSchema": recipe_dict_schema}}
+    # keep validationLevel as "moderate" to allow for existing documents to be validated
+    # keep validationAction as "warning" so we can update the schema as we learn more about devices
+    collection_options = {"validator": {"$jsonSchema": recipe_dict_schema}, "validationLevel": "moderate", "validationAction": "warn"}
     try:
         db.create_collection(collection_name, **collection_options)
     except CollectionInvalid:
