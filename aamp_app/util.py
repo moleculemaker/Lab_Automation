@@ -271,11 +271,11 @@ devices_ref_redundancy = {
                     "type": str,
                     "notes": "Name of the device.",
                 },
-                "numchannel": {
-                    "default": 1,
-                    "type": int,
-                    "notes": "",
-                },
+                # "numchannel": {
+                #     "default": 1,
+                #     "type": int,
+                #     "notes": "",
+                # },
                 "port": {
                     "default": "COM5",
                     "type": str,
@@ -1263,14 +1263,14 @@ devices_ref_redundancy = {
                 "obj": NewportESP301Deinitialize,
             },
             "NewportESP301MoveSpeedAbsolute": {
-                "default_code": "NewportESP301MoveSpeedAbsolute(receiver= '', axis= 1, position= 0, speed= 20.0)",
+                "default_code": "NewportESP301MoveSpeedAbsolute(receiver= '', axis_number= 1, position= 0, speed= 20.0)",
                 "args": {
                     "receiver": {
                         "default": "NewportESP301",
                         "type": str,
                         "notes": "Name of the device",
                     },
-                    "axis": {
+                    "axis_number": {
                         "default": 1,
                         "type": int,
                         "notes": "Axis number",
@@ -1289,14 +1289,14 @@ devices_ref_redundancy = {
                 "obj": NewportESP301MoveSpeedAbsolute,
             },
             "NewportESP301MoveSpeedRelative": {
-                "default_code": "NewportESP301MoveSpeedRelative(receiver= '', axis= 1, distance= 0, speed= 20.0)",
+                "default_code": "NewportESP301MoveSpeedRelative(receiver= '', axis_number= 1, distance= 0, speed= 20.0)",
                 "args": {
                     "receiver": {
                         "default": "NewportESP301",
                         "type": str,
                         "notes": "Name of the device",
                     },
-                    "axis": {
+                    "axis_number": {
                         "default": 1,
                         "type": int,
                         "notes": "Axis number",
