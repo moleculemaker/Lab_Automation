@@ -187,6 +187,19 @@ def update_execution_upstream(execution):
         print("com.document not found")
         return False
 
+def save_log_to_mongo(log_string):
+    """Save a log entry to the MongoDB logs collection."""
+    try:
+        log_lines = log_string.strip().split("\n")
+
+        log_entry = {
+            "timestamp": f"Recipe_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            "log": log_lines,
+        }
+        mongo.db["logs"].insert_one(log_entry)  # Save to 'logs' collection
+        print("Log saved to MongoDB successfully.")
+    except Exception as e:
+        print(f"Failed to save log to MongoDB: {e}")
 
 # ---------------------------------------------------
 # Home Page
@@ -1878,6 +1891,9 @@ def manual_control_execute_fill_code(
         #     else:
         #         log_string += msg
         # print(messages)
+
+        save_log_to_mongo(code_log_string)
+        
         return (
             opt,
             True,
