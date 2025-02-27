@@ -3,7 +3,7 @@ This is a step-by-step guide for how to add devices and commands to the dropdown
 
 ### Step 1:
 
-Ensure that you have the device_name.py file and the device_name_commands.py file for the device you want to add. device_name.py should be in aamp_app/devices and device_name_commands.py should be in aamp_app/commands. You will have to refer to both of these files later to populate utils.py correctly.
+Ensure that you have the device_name.py file and the device_name_commands.py file for the device you want to add. device_name.py should be in aamp_app/devices and device_name_commands.py should be in aamp_app/commands. You will have to refer to both of these files later to populate the utils file correctly.
 
 ### Step 2:
 
@@ -122,7 +122,7 @@ And here is the corresponding device specification in JSON in utils.py:
 
 ### Step 5:
 
-Add a nested object to the device object conatining each command. Similarly to the previous step, this requires looking at what parameters each function takes and their defaults. Here are the functions in the commands file:
+Add a nested object to the device object containing each command. Similarly to the previous step, this requires looking at what parameters each function takes and their defaults. Here are the functions in the commands file:
 
 ```python
 class PSD6SyringePumpConnect(PSD6SyringePumpParentCommand):
@@ -180,7 +180,7 @@ class PSD6SyringePumpWithdraw(PSD6SyringePumpParentCommand):
         self._result = CommandResult(*self._receiver.withdraw_syringe_volume(self._params['volume'], self._params['valve_num'], self._params['flowrate']))
 ```
 
-And here are the corresponding command objects in utils.py:
+And here are the corresponding command objects in the utils file:
 ```python
 # As a nested object within the previously defined device object...
 "commands": {
@@ -302,3 +302,7 @@ And here are the corresponding command objects in utils.py:
             },
         },
 ```
+
+### Step 6:
+
+To confirm that everything is working correctly, ensure all of the dropdowns are propagated correctly with the new device and commands, and that they can all be added to the database. 
