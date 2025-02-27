@@ -15,6 +15,7 @@ from devices.oxygen_sensor import OxygenSensor
 from devices.sht85_sensor import SHT85HumidityTempSensor
 from devices.device import Device, MiscDeviceClass
 from devices.utility_device import UtilityCommands
+from devices.psd6_syringe_pump import PSD6SyringePump
 
 from commands.linear_stage_150_commands import *
 from commands.mts50_z8_commands import *
@@ -31,6 +32,7 @@ from commands.mfc_commands import *
 from commands.sht85_sensor_commands import *
 from commands.newport_esp301_commands import *
 from commands.utility_commands import *
+from commands.psd6_syringe_pump_commands import *
 
 import json
 import numpy as np
@@ -1449,7 +1451,7 @@ devices_ref_redundancy = {
         },
     },
     # "Spectrometer": {"obj": StellarNetSpectrometer},
-    # "XimeaCamera": {"obj": XimeaCamera},
+    "XimeaCamera": {"obj": XimeaCamera},
     "DummyHeater": {
         "obj": DummyHeater,
         "serial": True,
@@ -1526,6 +1528,157 @@ devices_ref_redundancy = {
                     },
                 },
                 "obj": DummyHeaterSetTemp,
+            },
+        },
+    },
+    "PSD6SyringePump": {
+        "obj": PSD6SyringePump,
+        "serial": True,
+        "serial_sequence": ["PSD6SyringePumpInitialize"],
+        "import_device": "from devices.psd6_syringe_pump import PSD6SyringePump",
+        "import_commands": "from commands.psd6_syringe_pump_commands import *",
+        "init": {
+            "default_code": "PSD6SyringePump(name='PSD6SyringePump', port='COM5', baudrate=9600, timeout=10.0)",
+            "obj_name": "PSD6SyringePump",
+            "args": {
+                "name": {
+                    "default": "PSD6SyringePump",
+                    "type": str,
+                    "notes": "Name of the device.",
+                },
+                "port": {
+                    "default": "COM5",
+                    "type": str,
+                    "notes": "Port",
+                },
+                "baudrate": {
+                    "default": 9600,
+                    "type": int,
+                    "notes": "Baudrate",
+                },
+                "timeout": {
+                    "default": 10.0,
+                    "type": float,
+                    "notes": "Timeout",
+                },
+            },
+        },
+        "commands": {
+            "PSD6SyringePumpConnect": {
+                "default_code": "PSD6SyringePumpConnect(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "PSD6SyringePump",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    }
+                },
+                "obj": PSD6SyringePumpConnect,
+            },
+            "PSD6SyringePumpInitialize": {
+                "default_code": "PSD6SyringePumpInitialize(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "PSD6SyringePump",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    }
+                },
+                "obj": PSD6SyringePumpInitialize,
+            },
+            "PSD6SyringePumpMoveValve": {
+                "default_code": "PSD6SyringePumpMoveValve(receiver= '', valve_num=0)",
+                "args": {
+                    "receiver": {
+                        "default": "PSD6SyringePump",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    },
+                    "valve_num": {
+                        "default": 0,
+                        "type": int,
+                        "notes": "Valve number.",
+                    },
+                },
+                "obj": PSD6SyringePumpMoveValve,
+            },
+            "PSD6SyringePumpMoveAbsolute": {
+                "default_code": "PSD6SyringePumpMoveAbsolute(receiver= '', volume=0.0, valve_num= 0, flowrate=0.0)",
+                "args": {
+                    "receiver": {
+                        "default": "PSD6SyringePump",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    },
+                    "volume": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Volume.",
+                    },
+                    "valve_num": {
+                        "default": 0,
+                        "type": int,
+                        "notes": "Valve number.",
+                    },
+                    "flowrate": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Flowrate.",
+                    },
+                },
+                "obj": PSD6SyringePumpMoveAbsolute,
+            },
+            "PSD6SyringePumpInfuse": {
+                "default_code": "PSD6SyringePumpInfuse(receiver= '', volume=0.0, valve_num= 0, flowrate=0.0)",
+                "args": {
+                    "receiver": {
+                        "default": "PSD6SyringePump",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    },
+                    "volume": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Volume.",
+                    },
+                    "valve_num": {
+                        "default": 0,
+                        "type": int,
+                        "notes": "Valve number.",
+                    },
+                    "flowrate": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Flowrate.",
+                    },
+                },
+                "obj": PSD6SyringePumpInfuse,
+            },
+            "PSD6SyringePumpWithdraw": {
+                "default_code": "PSD6SyringePumpWithdraw(receiver= '', volume=0.0, valve_num= 0, flowrate=0.0)",
+                "args": {
+                    "receiver": {
+                        "default": "PSD6SyringePump",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    },
+                    "volume": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Volume.",
+                    },
+                    "valve_num": {
+                        "default": 0,
+                        "type": int,
+                        "notes": "Valve number.",
+                    },
+                    "flowrate": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Flowrate.",
+                    },
+                },
+                "obj": PSD6SyringePumpWithdraw,
             },
         },
     },

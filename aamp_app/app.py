@@ -909,7 +909,11 @@ def view_recipe_add_command(n, url, device_type, command_type, json_value):
 def view_recipe_fill_execution_options(url):
     if str(url) == "/view-recipe":
         if "document" in com.__dict__.keys():
-            ls = com.document["recipe_dict"]["execution_options"]["output_files"]
+            try:
+                ls = com.document["recipe_dict"]["execution_options"]["output_files"]
+            except Exception as e:
+                print(str(e))
+                ls = []
             filesToRet = ""
             for item in ls:
                 filesToRet += item + "\n"
@@ -939,7 +943,8 @@ def view_recipe_save_execution_options(
     n, filenames, default_execution_record_name, url
 ):
     if str(url) == "/view-recipe":
-        com.execution_options["output_files"] = filenames.splitlines()
+        if filenames is not None:
+            com.execution_options["output_files"] = filenames.splitlines()
         com.execution_options[
             "default_execution_record_name"
         ] = default_execution_record_name
