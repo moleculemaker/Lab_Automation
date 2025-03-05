@@ -3,11 +3,11 @@ This is a step-by-step guide for how to add devices and commands to the dropdown
 
 ### Step 1:
 
-Ensure that you have the device_name.py file and the device_name_commands.py file for the device you want to add. device_name.py should be in aamp_app/devices and device_name_commands.py should be in aamp_app/commands. You will have to refer to both of these files later to populate the utils file correctly.
+Ensure that you have the device_name.py file and the device_name_commands.py file for the device you want to add. device_name.py should be in aamp_app/devices and device_name_commands.py should be in aamp_app/commands. You will have to refer to both of these files later to populate the util file correctly.
 
 ### Step 2:
 
-Navigate to aamp_app/utils.py. This file contains the configurations for each devices and their respective commands as they show up in the UI.
+Navigate to aamp_app/util.py. This file contains the configurations for each devices and their respective commands as they show up in the UI.
 
 ### Step 3:
 
@@ -82,7 +82,7 @@ class PSD6SyringePump(SerialDevice):
 
 ```
 
-And here is the corresponding device specification in JSON in utils.py:
+And here is the corresponding device specification in JSON in util.py:
 ```python
 "PSD6SyringePump": {
         "obj": PSD6SyringePump,
@@ -180,7 +180,7 @@ class PSD6SyringePumpWithdraw(PSD6SyringePumpParentCommand):
         self._result = CommandResult(*self._receiver.withdraw_syringe_volume(self._params['volume'], self._params['valve_num'], self._params['flowrate']))
 ```
 
-And here are the corresponding command objects in the utils file:
+And here are the corresponding command objects in the util file:
 ```python
 # As a nested object within the previously defined device object...
 "commands": {
