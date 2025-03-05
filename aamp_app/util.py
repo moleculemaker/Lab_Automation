@@ -16,6 +16,7 @@ from devices.sht85_sensor import SHT85HumidityTempSensor
 from devices.device import Device, MiscDeviceClass
 from devices.utility_device import UtilityCommands
 from devices.psd6_syringe_pump import PSD6SyringePump
+from devices.ximea_camera import XimeaCamera
 
 from commands.linear_stage_150_commands import *
 from commands.mts50_z8_commands import *
@@ -33,6 +34,7 @@ from commands.sht85_sensor_commands import *
 from commands.newport_esp301_commands import *
 from commands.utility_commands import *
 from commands.psd6_syringe_pump_commands import *
+from commands.ximea_camera_commands import *
 
 import json
 import numpy as np
@@ -1451,7 +1453,6 @@ devices_ref_redundancy = {
         },
     },
     # "Spectrometer": {"obj": StellarNetSpectrometer},
-    "XimeaCamera": {"obj": XimeaCamera},
     "DummyHeater": {
         "obj": DummyHeater,
         "serial": True,
@@ -1566,6 +1567,142 @@ devices_ref_redundancy = {
         "commands": {
             "PSD6SyringePumpConnect": {
                 "default_code": "PSD6SyringePumpConnect(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "PSD6SyringePump",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    }
+                },
+                "obj": PSD6SyringePumpConnect,
+            },
+            "PSD6SyringePumpInitialize": {
+                "default_code": "PSD6SyringePumpInitialize(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "PSD6SyringePump",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    }
+                },
+                "obj": PSD6SyringePumpInitialize,
+            },
+            "PSD6SyringePumpMoveValve": {
+                "default_code": "PSD6SyringePumpMoveValve(receiver= '', valve_num=0)",
+                "args": {
+                    "receiver": {
+                        "default": "PSD6SyringePump",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    },
+                    "valve_num": {
+                        "default": 0,
+                        "type": int,
+                        "notes": "Valve number.",
+                    },
+                },
+                "obj": PSD6SyringePumpMoveValve,
+            },
+            "PSD6SyringePumpMoveAbsolute": {
+                "default_code": "PSD6SyringePumpMoveAbsolute(receiver= '', volume=0.0, valve_num= 0, flowrate=0.0)",
+                "args": {
+                    "receiver": {
+                        "default": "PSD6SyringePump",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    },
+                    "volume": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Volume.",
+                    },
+                    "valve_num": {
+                        "default": 0,
+                        "type": int,
+                        "notes": "Valve number.",
+                    },
+                    "flowrate": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Flowrate.",
+                    },
+                },
+                "obj": PSD6SyringePumpMoveAbsolute,
+            },
+            "PSD6SyringePumpInfuse": {
+                "default_code": "PSD6SyringePumpInfuse(receiver= '', volume=0.0, valve_num= 0, flowrate=0.0)",
+                "args": {
+                    "receiver": {
+                        "default": "PSD6SyringePump",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    },
+                    "volume": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Volume.",
+                    },
+                    "valve_num": {
+                        "default": 0,
+                        "type": int,
+                        "notes": "Valve number.",
+                    },
+                    "flowrate": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Flowrate.",
+                    },
+                },
+                "obj": PSD6SyringePumpInfuse,
+            },
+            "PSD6SyringePumpWithdraw": {
+                "default_code": "PSD6SyringePumpWithdraw(receiver= '', volume=0.0, valve_num= 0, flowrate=0.0)",
+                "args": {
+                    "receiver": {
+                        "default": "PSD6SyringePump",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    },
+                    "volume": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Volume.",
+                    },
+                    "valve_num": {
+                        "default": 0,
+                        "type": int,
+                        "notes": "Valve number.",
+                    },
+                    "flowrate": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Flowrate.",
+                    },
+                },
+                "obj": PSD6SyringePumpWithdraw,
+            },
+        },
+    },
+    "XimeaCamera": {
+        "obj": XimeaCamera,
+        "serial": True,
+        "serial_sequence": ["XimeaCameraInitialize"],
+        "import_device": "from devices.ximea_camera import XimeaCamera",
+        "import_commands": "from commands.ximea_camera_commands import *",
+        "init": {
+            "default_code": "XimeaCamera(name='XimeaCamera')",
+            "obj_name": "XimeaCamera",
+            "args": {
+                "name": {
+                    "default": "XimeaCamera",
+                    "type": str,
+                    "notes": "Name of the device.",
+                },
+            },
+        },
+        "commands": {
+            "XimeaCameraInitialize": {
+                "default_code": "XimeaCameraInitialize(receiver= '')",
                 "args": {
                     "receiver": {
                         "default": "PSD6SyringePump",
