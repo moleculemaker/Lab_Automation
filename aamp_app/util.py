@@ -1705,117 +1705,154 @@ devices_ref_redundancy = {
                 "default_code": "XimeaCameraInitialize(receiver= '')",
                 "args": {
                     "receiver": {
-                        "default": "PSD6SyringePump",
+                        "default": "XimeaCamera",
                         "type": str,
                         "notes": "Name of the device.",
                     }
                 },
-                "obj": PSD6SyringePumpConnect,
+                "obj": XimeaCameraInitialize,
             },
-            "PSD6SyringePumpInitialize": {
-                "default_code": "PSD6SyringePumpInitialize(receiver= '')",
+            "XimeaCameraDeinitialize": {
+                "default_code": "XimeaCameraDeinitialize(receiver= '', reset_init_flag=True)",
                 "args": {
                     "receiver": {
-                        "default": "PSD6SyringePump",
+                        "default": "XimeaCamera",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    },
+                    "reset_init_flag": {
+                        "default": True,
+                        "type": str,
+                        "notes": "Reset init flag.",
+                    }
+                },
+                "obj": XimeaCameraDeinitialize,
+            },
+            "XimeaCameraGetImage": {
+                "default_code": "XimeaCameraGetImage(receiver= '', save_to_file=True, filename=None, exposure_time=None, gain=None, show_pop_up=False)",
+                "args": {
+                    "receiver": {
+                        "default": "XimeaCamera",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    },
+                    "save_to_file": {
+                        "default": True,
+                        "type": bool,
+                        "notes": "Whether the image should be saved to file or not.",
+                    },
+                    "filename": {
+                        "default": None,
+                        "type": str,
+                        "notes": "Filename to save the image to.",
+                    },
+                    "exposure_time": {
+                        "default": None,
+                        "type": int,
+                        "notes": "Exposure time of the camera.",
+                    },
+                    "gain": {
+                        "default": None,
+                        "type": float,
+                        "notes": "Gain of the camera.",
+                    },
+                    "show_pop_up": {
+                        "default": False,
+                        "type": bool,
+                        "notes": "Whether to show a pop up of the image.",
+                    },
+                },
+                "obj": XimeaCameraGetImage,
+            },
+            "XimeaCameraSetDefaultExposure": {
+                "default_code": "XimeaCameraSetDefaultExposure(receiver= '', exposure_time=None)",
+                "args": {
+                    "receiver": {
+                        "default": "XimeaCamera",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    },
+                    "exposure_time": {
+                        "default": None,
+                        "type": int,
+                        "notes": "Updated exposure time.",
+                    },
+                },
+                "obj": XimeaCameraSetDefaultExposure,
+            },
+            "XimeaCameraSetDefaultGain": {
+                "default_code": "XimeaCameraSetDefaultGain(receiver= '', gain=None)",
+                "args": {
+                    "receiver": {
+                        "default": "XimeaCamera",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    },
+                    "gain": {
+                        "default": None,
+                        "type": float,
+                        "notes": "Updated gain.",
+                    },
+                },
+                "obj": XimeaCameraSetDefaultGain,
+            },
+            "XimeaCameraUpdateWhiteBal": {
+                "default_code": "XimeaCameraUpdateWhiteBal(receiver= '', exposure_time=None, gain=None)",
+                "args": {
+                    "receiver": {
+                        "default": "XimeaCamera",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    },
+                    "exposure_time": {
+                        "default": None,
+                        "type": int,
+                        "notes": "Updated exposure time.",
+                    },
+                    "gain": {
+                        "default": None,
+                        "type": float,
+                        "notes": "Updated gain.",
+                    },
+                },
+                "obj": XimeaCameraUpdateWhiteBal,
+            },
+            "XimeaCameraSetManualWhiteBal": {
+                "default_code": "XimeaCameraSetManualWhiteBal(receiver= '', wb_kr=None, wb_kg=None, wb_kb=None)",
+                "args": {
+                    "receiver": {
+                        "default": "XimeaCamera",
+                        "type": str,
+                        "notes": "Name of the device.",
+                    },
+                    "wb_kr": {
+                        "default": None,
+                        "type": float,
+                        "notes": "White balance red.",
+                    },
+                    "wb_kg": {
+                        "default": None,
+                        "type": float,
+                        "notes": "White balance green.",
+                    },
+                    "wb_kb": {
+                        "default": None,
+                        "type": float,
+                        "notes": "White balance blue.",
+                    },
+                },
+                "obj": XimeaCameraSetManualWhiteBal,
+            },
+            "XimeaCameraResetWhiteBal": {
+                "default_code": "XimeaCameraResetWhiteBal(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "XimeaCamera",
                         "type": str,
                         "notes": "Name of the device.",
                     }
                 },
-                "obj": PSD6SyringePumpInitialize,
-            },
-            "PSD6SyringePumpMoveValve": {
-                "default_code": "PSD6SyringePumpMoveValve(receiver= '', valve_num=0)",
-                "args": {
-                    "receiver": {
-                        "default": "PSD6SyringePump",
-                        "type": str,
-                        "notes": "Name of the device.",
-                    },
-                    "valve_num": {
-                        "default": 0,
-                        "type": int,
-                        "notes": "Valve number.",
-                    },
-                },
-                "obj": PSD6SyringePumpMoveValve,
-            },
-            "PSD6SyringePumpMoveAbsolute": {
-                "default_code": "PSD6SyringePumpMoveAbsolute(receiver= '', volume=0.0, valve_num= 0, flowrate=0.0)",
-                "args": {
-                    "receiver": {
-                        "default": "PSD6SyringePump",
-                        "type": str,
-                        "notes": "Name of the device.",
-                    },
-                    "volume": {
-                        "default": 0.0,
-                        "type": float,
-                        "notes": "Volume.",
-                    },
-                    "valve_num": {
-                        "default": 0,
-                        "type": int,
-                        "notes": "Valve number.",
-                    },
-                    "flowrate": {
-                        "default": 0.0,
-                        "type": float,
-                        "notes": "Flowrate.",
-                    },
-                },
-                "obj": PSD6SyringePumpMoveAbsolute,
-            },
-            "PSD6SyringePumpInfuse": {
-                "default_code": "PSD6SyringePumpInfuse(receiver= '', volume=0.0, valve_num= 0, flowrate=0.0)",
-                "args": {
-                    "receiver": {
-                        "default": "PSD6SyringePump",
-                        "type": str,
-                        "notes": "Name of the device.",
-                    },
-                    "volume": {
-                        "default": 0.0,
-                        "type": float,
-                        "notes": "Volume.",
-                    },
-                    "valve_num": {
-                        "default": 0,
-                        "type": int,
-                        "notes": "Valve number.",
-                    },
-                    "flowrate": {
-                        "default": 0.0,
-                        "type": float,
-                        "notes": "Flowrate.",
-                    },
-                },
-                "obj": PSD6SyringePumpInfuse,
-            },
-            "PSD6SyringePumpWithdraw": {
-                "default_code": "PSD6SyringePumpWithdraw(receiver= '', volume=0.0, valve_num= 0, flowrate=0.0)",
-                "args": {
-                    "receiver": {
-                        "default": "PSD6SyringePump",
-                        "type": str,
-                        "notes": "Name of the device.",
-                    },
-                    "volume": {
-                        "default": 0.0,
-                        "type": float,
-                        "notes": "Volume.",
-                    },
-                    "valve_num": {
-                        "default": 0,
-                        "type": int,
-                        "notes": "Valve number.",
-                    },
-                    "flowrate": {
-                        "default": 0.0,
-                        "type": float,
-                        "notes": "Flowrate.",
-                    },
-                },
-                "obj": PSD6SyringePumpWithdraw,
+                "obj": XimeaCameraResetWhiteBal,
             },
         },
     },
