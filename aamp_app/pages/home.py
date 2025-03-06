@@ -33,6 +33,7 @@ links = {
     "Manual Control": "/manual-control",
     "Database Browser": "/database-browser",
     "Real Time Telemetry": "/real-time-telemetry",
+    "Images": "/images",
     # "Options": "/options",
 }
 

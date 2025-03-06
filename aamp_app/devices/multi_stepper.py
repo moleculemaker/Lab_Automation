@@ -34,6 +34,25 @@ class MultiStepper(ArduinoSerialDevice):
         self._stepper_list = stepper_list
         self._move_timeout = move_timeout # max move timeout for ALL possible motors controlled by arduino
 
+    def get_init_args(self) -> dict:
+        args_dict = {
+            "name": self._name,
+            "port": self._port,
+            "baudrate": self._baudrate,
+            "timeout": self._timeout,
+            "stepper_list": self._stepper_list,
+            "move_timeout": self._move_timeout
+        }
+        return args_dict
+
+    def update_init_args(self, args_dict: dict):
+        self._name = args_dict["name"]
+        self._port = args_dict["port"]
+        self._baudrate = args_dict["baudrate"]
+        self._timeout = args_dict["timeout"]
+        self._stepper_list = args_dict["stepper_list"]
+        self._move_timeout = args_dict["move_timeout"]
+
     def initialize(self):
         for stepper in self._stepper_list:
             was_homed, comment = self.home(stepper)

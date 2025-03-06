@@ -16,6 +16,17 @@ class MassFlowController(Device):
         super().__init__(name)
         self._ip = ip
 
+    def get_init_args(self) -> dict:
+        args_dict = {
+            "name": self._name,
+            "ip": self._ip,
+        }
+        return args_dict
+
+    def update_init_args(self, args_dict: dict):
+        self._name = args_dict["name"]
+        self._ip = args_dict["ip"]
+
     def initialize(self) -> Tuple[bool, str]:
         self._is_initialized = True
         return (True, "Initialized mass flow controller")

@@ -9,6 +9,7 @@ import dash
 from dash import dcc
 from dash import html
 from dash import dash_table
+import dash_ag_grid as dag
 from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 import os, signal
@@ -78,6 +79,7 @@ else:
 #     "diaogroup",
 # )
 mongo_gridfs = GridFS(mongo.db, collection="recipes")
+fs = GridFS(mongo.db)
 
 solutions.init_collection()
 devices.init_collection()
@@ -107,6 +109,7 @@ navbar = dbc.NavbarSimple(
         dbc.NavItem(
             dbc.NavLink("Real Time", href="/real-time-telemetry", external_link=True)
         ),
+        dbc.NavItem(dbc.NavLink("Images", href="/images", external_link=True)),
         # dbc.DropdownMenu(
         #     children=[
         #         # dbc.DropdownMenuItem(
@@ -186,7 +189,19 @@ def update_execution_upstream(execution):
     else:
         print("com.document not found")
         return False
-
+    
+#  TODO: include where the log was generated from
+def save_log_to_mongo(log_string):
+    """Save a log entry to the MongoDB logs collection."""
+    try:
+        log_entry = {
+            "timestamp": f"Recipe_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            "log": log_string,
+        }
+        mongo.db["logs"].insert_one(log_entry)  # Save to 'logs' collection
+        print("Log saved to MongoDB successfully.")
+    except Exception as e:
+        print(f"Failed to save log to MongoDB: {e}")
 
 # ---------------------------------------------------
 # Home Page
@@ -343,62 +358,45 @@ def create_new_recipe_doc(n, url, name):
 # View Recipe Page
 # ---------------------------------------------------
 
-
 @app.callback(
     Output("devices-table-div", "children"),
     [Input("refresh-button1", "n_clicks"), Input("devices-table", "data")],
     [State("devices-table-div", "children")],
 )
-def update_device_table(n_clicks, data, table):  # view-recipe page
+def update_device_table(n_clicks, data, table):
     print("update_device_table")
-    # table_data1 = dl5
+    
     table_data1 = com.get_clean_device_list().copy()
-    # print(com.device_list[1].get_init_args())
-    table_data1_new = []
-    for index, list in enumerate(table_data1):
-        # table_data1[index][1].update({"device_type": table_data1[index][0]})
-        # del table_data1[index][0]
-        table_data1_new.append(
-            {
-                "index": index,
-                "device_type": table_data1[index][0],
-                "params": str(table_data1[index][1]),
-            }
-        )
+    table_data1_new = [
+        {
+            "index": index,
+            "device_type": device[0],
+            "params": str(device[1]),
+        }
+        for index, device in enumerate(table_data1)
+    ]
 
-    table_data1 = table_data1_new
+    column_defs = [
+        {"headerName": "Index", "field": "index"},
+        {"headerName": "Device Type", "field": "device_type", "rowDrag": True},
+        {"headerName": "Parameters", "field": "params", "flex": 1},
+    ]
 
-    table = dash_table.DataTable(
+    grid = dag.AgGrid(
         id="devices-table",
-        data=table_data1,
-        columns=[
-            {"name": "Index", "id": "index"},
-            {"name": "Type", "id": "device_type"},
-            {"name": "Parameters", "id": "params"},
-        ],
-        style_cell={
-            "overflow": "hidden",
-            "textOverflow": "ellipsis",
-            "maxWidth": 0,
-            "textAlign": "left",
-            "padding": "5px",
+        columnDefs=column_defs,
+        rowData=table_data1_new,
+        defaultColDef={"sortable": True, "filter": True, "resizable": True},
+        dashGridOptions={
+            "rowDragManaged": True,
+            "animateRows": True,
+            "rowSelection": "single",
         },
-        style_cell_conditional=[
-            {"if": {"column_id": "index"}, "width": "5%"},
-            {"if": {"column_id": "device_type"}, "width": "20%"},
-            {"if": {"column_id": "params"}, "width": "70%"},
-        ],
-        # tooltip_data=[
-        #     {
-        #         column: {"value": str(value), "type": "markdown"}
-        #         for column, value in row.items()
-        #     }
-        #     for row in table_data1
-        # ],
-        # tooltip_duration=None,
-        # editable = True,
+        style={"height": 400, "width": "100%"},
     )
-    return table
+
+    return html.Div(grid)
+
 
 
 @app.callback(
@@ -430,7 +428,10 @@ def save_command(n_clicks, active_cell, data, value):  # view-recipe page
         Output("view-recipe-alert", "color", allow_duplicate=True),
         Output("view-recipe-alert", "duration", allow_duplicate=True),
     ],
-    Input("save-device-editor", "n_clicks"),
+    [
+        Input("save-device-editor", "n_clicks"),
+        Input("devices-table", "data")
+    ],
     [
         State("devices-table", "active_cell"),
         State("devices-table", "data"),
@@ -438,7 +439,7 @@ def save_command(n_clicks, active_cell, data, value):  # view-recipe page
     ],
     prevent_initial_call=True,
 )
-def save_device(n_clicks, active_cell, data, value):  # view-recipe page
+def save_device(n_clicks, updated_data, active_cell, data, value):  # view-recipe page
     print("save_device")
     if active_cell is not None and data[active_cell["row"]]["params"] != str(
         json.loads(value)
@@ -908,7 +909,11 @@ def view_recipe_add_command(n, url, device_type, command_type, json_value):
 def view_recipe_fill_execution_options(url):
     if str(url) == "/view-recipe":
         if "document" in com.__dict__.keys():
-            ls = com.document["recipe_dict"]["execution_options"]["output_files"]
+            try:
+                ls = com.document["recipe_dict"]["execution_options"]["output_files"]
+            except Exception as e:
+                print(str(e))
+                ls = []
             filesToRet = ""
             for item in ls:
                 filesToRet += item + "\n"
@@ -938,7 +943,8 @@ def view_recipe_save_execution_options(
     n, filenames, default_execution_record_name, url
 ):
     if str(url) == "/view-recipe":
-        com.execution_options["output_files"] = filenames.splitlines()
+        if filenames is not None:
+            com.execution_options["output_files"] = filenames.splitlines()
         com.execution_options[
             "default_execution_record_name"
         ] = default_execution_record_name
@@ -1878,6 +1884,9 @@ def manual_control_execute_fill_code(
         #     else:
         #         log_string += msg
         # print(messages)
+
+        save_log_to_mongo(code_log_string)
+        
         return (
             opt,
             True,
@@ -2172,6 +2181,67 @@ def fill_real_time_telemetry(device, n, url):
         return [""]
     return [""]
 
+# ---------------------------------------------------------------
+# Images page
+# ---------------------------------------------------------------
+
+@app.callback(
+    Output("images-alert", "children"),
+    Output("images-alert", "is_open"),
+    Output("images-alert", "color"),
+    Input("upload-image-button", "n_clicks"),
+    [
+        State("sample-number", "value"),
+        State("motor-speed", "value"),
+        State("temperature", "value"),
+        State("concentration", "value"),
+        State("printing-gap", "value"),
+        State("precursor-volume", "value"),
+        State("solvent", "value"),
+        State("image-upload", "contents"),
+    ],
+    prevent_initial_call=True,
+)
+def upload_image(n_clicks, sample_number, motor_speed, temperature, concentration, printing_gap, precursor_volume, solvent, image_contents):
+    print("upload_image")
+    if not image_contents:
+        return (
+            "No image uploaded. Please upload an image.",
+            True,
+            "danger",
+        )
+
+    try:
+        header, encoded = image_contents.split(",", 1)
+        image_data = base64.b64decode(encoded)
+
+        image_id = fs.put(image_data, filename=f"sample_{sample_number}.png")
+
+        metadata = {
+            "sample_number": sample_number,
+            "motor_speed": motor_speed,
+            "temperature": temperature,
+            "concentration": concentration,
+            "printing_gap": printing_gap,
+            "precursor_volume": precursor_volume,
+            "solvent": solvent,
+            "image_id": str(image_id), 
+            "timestamp": datetime.utcnow(),
+        }
+        mongo.db["images"].insert_one(metadata)
+
+        return (
+            f"Image uploaded successfully with ID: {image_id}",
+            True,
+            "success",
+        )
+    except Exception as e:
+        print(f"Error uploading image: {e}")
+        return (
+            f"Failed to upload image. Error: {str(e)}",
+            True,
+            "danger",
+        )
 
 if __name__ == "__main__":
     app.run(debug=True)
