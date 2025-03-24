@@ -4,14 +4,7 @@ import dash
 
 dash.register_page(__name__, path="/sampler", name="Sampler", title="Sampler")
 
-SOLV_NAMES = ["CF", "CB", "CB9:A1", "CB8:A2", "CB7:A3"]
-TEMP_CHOICES_D = {
-    "CF": [25, 41.3], 
-    "CB": [25, 47.3, 62.9, 87.6, 107.4], 
-    "CB9:A1": [25, 47.3, 62.9, 87.6, 107.4],
-    "CB8:A2": [25, 47.3, 62.9, 87.6, 107.4], 
-    "CB7:A3": [25, 47.3, 62.9, 87.6, 107.4]
-}
+SOLV_NAMES = ["CF", "CB", "CB9:A1", "CB8:A2", "CB7:A3", "1,4-Dichlorobenzene", "1,2,4-Trihlorobenzene", "o-xylene", "m-xylene", "p-xylene", "mesitylene", "toluene", "1-Chloronaphthalene", "anisole", "Tetrahydrofuran", "decane"]
 CONCEN_D = [2, 5, 10, 15, 20]
 PRINT_GAP_D = [50, 100]
 PREC_VOL_D = [6, 9, 12]
@@ -19,6 +12,44 @@ MOTOR_SPEEDS_D = [0.01, 0.0355, 0.126, 0.4472, 1.587, 5.635, 20]
 SPEED_C = (0.01, 20.0)
 PREC_VOL_C = (6.0, 12.0)
 CONCEN_C = (1, 5)
+
+TEMP_CHOICES_D = {
+    "CF": [25, 41.3], 
+    "CB": [25, 47.3, 62.9, 87.6, 107.4], 
+    "CB9:A1": [25, 47.3, 62.9, 87.6, 107.4],
+    "CB8:A2": [25, 47.3, 62.9, 87.6, 107.4], 
+    "CB7:A3": [25, 47.3, 62.9, 87.6, 107.4],
+    "1,4-Dichlorobenzene": [25, 47.3, 62.9, 87.6, 107.4, 135],
+    "1,2,4-Trihlorobenzene": [25, 47.3, 62.9, 87.6, 107.4, 135],
+    "o-xylene": [25, 47.3, 62.9, 87.6, 107.4, 119.6],
+    "m-xylene": [25, 47.3, 62.9, 87.6, 107.4, 114.6],
+    "p-xylene": [25, 47.3, 62.9, 87.6, 107.4, 113.8],
+    "mesitylene": [25, 47.3, 62.9, 87.6, 107.4, 135],
+    "toluene": [25, 47.3, 55.1, 62.9, 75.1, 87.7],
+    "1-Chloronaphthalene": [25, 47.3, 62.9, 87.6, 107.4, 135],
+    "anisole": [25, 47.3, 62.9, 87.6, 107.4, 129.1],
+    "Tetrahydrofuran": [25, 30.1, 35.4, 40, 45.7],
+    "decane": [25, 47.3, 62.9, 87.6, 107.4, 135],
+}
+
+TEMP_CHOICES_C = {
+    "CF": (25, 41.3),
+    "CB": (25, 107.4),
+    "CB9:A1": (25, 107.4),
+    "CB8:A2": (25, 107.4),
+    "CB7:A3": (25, 107.4),
+    "1,4-Dichlorobenzene": (25, 135),
+    "1,2,4-Trihlorobenzene": (25, 135),
+    "o-xylene": (25, 119.6),
+    "m-xylene": (25, 114.6),
+    "p-xylene": (25, 113.8),
+    "mesitylene": (25, 135),
+    "toluene": (25, 87.7),
+    "1-Chloronaphthalene": (25, 135),
+    "anisole": (25, 129.1),
+    "Tetrahydrofuran": (25, 45.7),
+    "decane": (25, 135),
+}
 
 layout = html.Div(
     [

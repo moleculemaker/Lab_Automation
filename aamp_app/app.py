@@ -26,6 +26,7 @@ from sklearn.preprocessing import StandardScaler
 import umap
 import plotly.express as px
 import plotly.graph_objects as go
+from scipy.stats import gaussian_kde
 
 from db.validation import solutions, films, devices, recipes
 try:
@@ -2257,8 +2258,24 @@ def upload_image(n_clicks, sample_number, motor_speed, temperature, concentratio
 # Sampler page
 # ---------------------------------------------------------------
 
+# add the following to the temp choices d and c
+# when adding to d, make sure to add three or four options evenly spaced between the min and max
+# when adding to c, make sure to just add the min and max values
+
+# "1,4-Dichlorobenzene",C1=CC(=CC=C1Cl)Cl��,25,153.548
+# "1,2,4-Trihlorobenzene",C1=CC(=C(C=C1Cl)Cl)Cl,25,184.946
+# o-xylene,CC1=CC=CC=C1C��,25,119.5683
+# m-xylene,CC1=CC(=CC=C1)C,25,114.5912
+# p-xylene,CC1=CC=C(C=C1)C,25,113.775
+# mesitylene,CC1=CC(=CC(=C1)C)C,25,139.1875
+# toluene,CC1=CC=CC=C1�,25,87.7163
+# 1-Chloronaphthalene,C1=CC=C2C(=C1)C=CC=C2Cl,25,227.995
+# anisole,COC1=CC=CC=C1�,25,129.1316
+# Tetrahydrofuran,C1CCOC1��,25,45.7105
+# decane,CCCCCCCCCC,25,148.3072
+
 # Add these constants from initial_point_generator.py
-SOLV_NAMES = ["CF", "CB", "CB9:A1", "CB8:A2", "CB7:A3"]
+SOLV_NAMES = ["CF", "CB", "CB9:A1", "CB8:A2", "CB7:A3", "1,4-Dichlorobenzene", "1,2,4-Trihlorobenzene", "o-xylene", "m-xylene", "p-xylene", "mesitylene", "toluene", "1-Chloronaphthalene", "anisole", "Tetrahydrofuran", "decane"]
 CONCEN_D = [2, 5, 10, 15, 20]
 PRINT_GAP_D = [50, 100]
 PREC_VOL_D = [6, 9, 12]
@@ -2272,7 +2289,37 @@ TEMP_CHOICES_D = {
     "CB": [25, 47.3, 62.9, 87.6, 107.4], 
     "CB9:A1": [25, 47.3, 62.9, 87.6, 107.4],
     "CB8:A2": [25, 47.3, 62.9, 87.6, 107.4], 
-    "CB7:A3": [25, 47.3, 62.9, 87.6, 107.4]
+    "CB7:A3": [25, 47.3, 62.9, 87.6, 107.4],
+    "1,4-Dichlorobenzene": [25, 47.3, 62.9, 87.6, 107.4, 135],
+    "1,2,4-Trihlorobenzene": [25, 47.3, 62.9, 87.6, 107.4, 135],
+    "o-xylene": [25, 47.3, 62.9, 87.6, 107.4, 119.6],
+    "m-xylene": [25, 47.3, 62.9, 87.6, 107.4, 114.6],
+    "p-xylene": [25, 47.3, 62.9, 87.6, 107.4, 113.8],
+    "mesitylene": [25, 47.3, 62.9, 87.6, 107.4, 135],
+    "toluene": [25, 47.3, 55.1, 62.9, 75.1, 87.7],
+    "1-Chloronaphthalene": [25, 47.3, 62.9, 87.6, 107.4, 135],
+    "anisole": [25, 47.3, 62.9, 87.6, 107.4, 129.1],
+    "Tetrahydrofuran": [25, 30.1, 35.4, 40, 45.7],
+    "decane": [25, 47.3, 62.9, 87.6, 107.4, 135],
+}
+
+TEMP_CHOICES_C = {
+    "CF": (25, 41.3),
+    "CB": (25, 107.4),
+    "CB9:A1": (25, 107.4),
+    "CB8:A2": (25, 107.4),
+    "CB7:A3": (25, 107.4),
+    "1,4-Dichlorobenzene": (25, 135),
+    "1,2,4-Trihlorobenzene": (25, 135),
+    "o-xylene": (25, 119.6),
+    "m-xylene": (25, 114.6),
+    "p-xylene": (25, 113.8),
+    "mesitylene": (25, 135),
+    "toluene": (25, 87.7),
+    "1-Chloronaphthalene": (25, 135),
+    "anisole": (25, 129.1),
+    "Tetrahydrofuran": (25, 45.7),
+    "decane": (25, 135),
 }
 
 @app.callback(
@@ -2407,30 +2454,100 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smile_string,
 
         if len(df) >= 2:
             X = df[['motor_speed_norm', 'temperature_norm', 'concentration_norm', 
-                   'printing_gap_norm', 'precursor_volume_norm']].values
+                'printing_gap_norm', 'precursor_volume_norm']].values
             
             pca = PCA(n_components=2)
             pca_result = pca.fit_transform(X)
             
-            reducer = umap.UMAP(random_state=42, n_neighbors=min(5, len(df)-1))  # Adjust n_neighbors
+            reducer = umap.UMAP(random_state=42, n_neighbors=min(5, len(df)-1))
             umap_result = reducer.fit_transform(X)
             
-            pca_fig = px.scatter(
-                x=pca_result[:, 0], 
-                y=pca_result[:, 1],
-                color=df['solvent'],
-                labels={'x': 'PCA Component 1', 'y': 'PCA Component 2'},
-                title='PCA Visualization of Parameter Sets'
+            n_background = 1000
+            background_points = np.random.rand(n_background, X.shape[1])
+            
+            background_pca = pca.transform(background_points)
+            background_umap = reducer.transform(background_points)
+            
+            pca_fig = go.Figure()
+            
+            x_min, x_max = background_pca[:,0].min(), background_pca[:,0].max()
+            y_min, y_max = background_pca[:,1].min(), background_pca[:,1].max()
+            
+            xi = np.linspace(x_min, x_max, 100)
+            yi = np.linspace(y_min, y_max, 100)
+            xi, yi = np.meshgrid(xi, yi)
+            
+            positions = np.vstack([xi.ravel(), yi.ravel()])
+            values = np.vstack([background_pca[:,0], background_pca[:,1]])
+            kernel = gaussian_kde(values)
+            z = np.reshape(kernel(positions).T, xi.shape)
+            
+            pca_fig.add_trace(go.Contour(
+                z=z,
+                x=xi[0],
+                y=yi[:,0],
+                colorscale='Blues',
+                showscale=False,
+                opacity=0.5,
+                name='Parameter Space Density'
+            ))
+            
+            for solvent in df['solvent'].unique():
+                mask = df['solvent'] == solvent
+                pca_fig.add_trace(go.Scatter(
+                    x=pca_result[mask, 0],
+                    y=pca_result[mask, 1],
+                    mode='markers',
+                    marker=dict(size=8),
+                    name=solvent
+                ))
+            
+            pca_fig.update_layout(
+                title='PCA Visualization of Parameter Sets',
+                xaxis_title='PCA Component 1',
+                yaxis_title='PCA Component 2'
             )
             
-            umap_fig = px.scatter(
-                x=umap_result[:, 0], 
-                y=umap_result[:, 1],
-                color=df['solvent'],
-                labels={'x': 'UMAP Component 1', 'y': 'UMAP Component 2'},
-                title='UMAP Visualization of Parameter Sets'
-            )
+            umap_fig = go.Figure()
             
+            x_min, x_max = background_umap[:,0].min(), background_umap[:,0].max()
+            y_min, y_max = background_umap[:,1].min(), background_umap[:,1].max()
+            
+            xi = np.linspace(x_min, x_max, 100)
+            yi = np.linspace(y_min, y_max, 100)
+            xi, yi = np.meshgrid(xi, yi)
+            
+            positions = np.vstack([xi.ravel(), yi.ravel()])
+            values = np.vstack([background_umap[:,0], background_umap[:,1]])
+            kernel = gaussian_kde(values)
+            z = np.reshape(kernel(positions).T, xi.shape)
+            
+            umap_fig.add_trace(go.Contour(
+                z=z,
+                x=xi[0],
+                y=yi[:,0],
+                colorscale='Blues',
+                showscale=False,
+                opacity=0.5,
+                name='Parameter Space Density'
+            ))
+            
+            for solvent in df['solvent'].unique():
+                mask = df['solvent'] == solvent
+                umap_fig.add_trace(go.Scatter(
+                    x=umap_result[mask, 0],
+                    y=umap_result[mask, 1],
+                    mode='markers',
+                    marker=dict(size=8),
+                    name=solvent
+                ))
+            
+            umap_fig.update_layout(
+                title='UMAP Visualization of Parameter Sets',
+                xaxis_title='UMAP Component 1',
+                yaxis_title='UMAP Component 2'
+            )
+
             res = html.Div([
                 html.H3("Parameter Space Visualizations"),
                 html.Div([
