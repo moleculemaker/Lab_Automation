@@ -18,6 +18,14 @@ from bson.objectid import ObjectId
 from console_interceptor import ConsoleInterceptor
 from gridfs import GridFS
 import base64
+import math
+import numpy as np
+import pandas as pd
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+import umap
+import plotly.express as px
+import plotly.graph_objects as go
 
 from db.validation import solutions, films, devices, recipes
 try:
@@ -109,7 +117,8 @@ navbar = dbc.NavbarSimple(
         dbc.NavItem(
             dbc.NavLink("Real Time", href="/real-time-telemetry", external_link=True)
         ),
-        dbc.NavItem(dbc.NavLink("Images", href="/images", external_link=True)),
+        # dbc.NavItem(dbc.NavLink("Images", href="/images", external_link=True)),
+        dbc.NavItem(dbc.NavLink("Sampler", href="/sampler", external_link=True)),
         # dbc.DropdownMenu(
         #     children=[
         #         # dbc.DropdownMenuItem(
@@ -2242,6 +2251,213 @@ def upload_image(n_clicks, sample_number, motor_speed, temperature, concentratio
             True,
             "danger",
         )
+
+
+# ---------------------------------------------------------------
+# Sampler page
+# ---------------------------------------------------------------
+
+# Add these constants from initial_point_generator.py
+SOLV_NAMES = ["CF", "CB", "CB9:A1", "CB8:A2", "CB7:A3"]
+CONCEN_D = [2, 5, 10, 15, 20]
+PRINT_GAP_D = [50, 100]
+PREC_VOL_D = [6, 9, 12]
+MOTOR_SPEEDS_D = [0.01, 0.0355, 0.126, 0.4472, 1.587, 5.635, 20]
+SPEED_C = (0.01, 20.0)
+PREC_VOL_C = (6.0, 12.0)
+CONCEN_C = (1, 5)
+
+TEMP_CHOICES_D = {
+    "CF": [25, 41.3], 
+    "CB": [25, 47.3, 62.9, 87.6, 107.4], 
+    "CB9:A1": [25, 47.3, 62.9, 87.6, 107.4],
+    "CB8:A2": [25, 47.3, 62.9, 87.6, 107.4], 
+    "CB7:A3": [25, 47.3, 62.9, 87.6, 107.4]
+}
+
+@app.callback(
+    Output("sampler-temperature-options", "children"),
+    Input("sampler-solvent-dropdown", "value"),
+)
+def update_temperature_options(selected_solvents):
+    if not selected_solvents:
+        return [html.P("Temperature options will appear after selecting solvent(s)")]
+    
+    temp_options = []
+    for solvent in selected_solvents:
+        temp_options.append(
+            html.Div([
+                html.H6(f"Temperature options for {solvent}:"),
+                dcc.Dropdown(
+                    id=f"sampler-temp-{solvent}",
+                    options=[{"label": temp, "value": temp} for temp in TEMP_CHOICES_D[solvent]],
+                    value=TEMP_CHOICES_D[solvent],
+                    multi=True,
+                ),
+            ])
+        )
+    
+    return temp_options
+
+@app.callback(
+    Output("sampler-results-table", "children"),
+    Output("sampler-alert", "children"),
+    Output("sampler-alert", "is_open"),
+    Output("sampler-alert", "color"),
+    Output("sampler-save-button", "disabled"),
+    Input("sampler-generate-button", "n_clicks"),
+    [
+        State("sampler-campaign-name", "value"),
+        State("sampler-polymer-name", "value"),
+        State("sampler-smile-string", "value"),
+        State("sampler-mw", "value"),
+        State("sampler-pdi", "value"),
+        State("sampler-solvent-dropdown", "value"),
+        State("sampler-concentration-range", "value"),
+        State("sampler-motor-speed-min", "value"),
+        State("sampler-motor-speed-max", "value"),
+        State("sampler-printing-gap-dropdown", "value"),
+        State("sampler-precursor-volume", "value"),
+        State("sampler-method-dropdown", "value"),
+        State("sampler-num-samples", "value"),
+    ],
+    prevent_initial_call=True,
+)
+def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smile_string, mw, pdi, 
+                            solvents, concentration_range, motor_speed_min, motor_speed_max, 
+                           printing_gaps, precursor_vol, sampling_method, num_samples):
+    print("generate_parameter_sets")
+    # print the parameters inputted for debugging purposes
+    print(f"Solvents: {solvents}")
+    print(f"Concentration Range: {concentration_range}")
+    print(f"Motor Speed Min: {motor_speed_min}")
+    print(f"Motor Speed Max: {motor_speed_max}")
+    print(f"Printing Gaps: {printing_gaps}")
+    print(f"Precursor Volume: {precursor_vol}")
+    print(f"Sampling Method: {sampling_method}")
+    print(f"Number of Samples: {num_samples}")
+    
+    if not solvents:
+        return None, "Please select at least one solvent.", True, "danger", True
+    
+    try:
+        parameter_sets = []
+        sample_count = 1
+        
+        for solvent in solvents:
+            temp_options = TEMP_CHOICES_D.get(solvent, [25])
+            
+            for _ in range(num_samples):
+                log_speed_min = math.log10(motor_speed_min)
+                log_speed_max = math.log10(motor_speed_max)
+                log_speed = log_speed_min + random.random() * (log_speed_max - log_speed_min)
+                motor_speed = round(10 ** log_speed, 2)  
+
+                temperature = round(random.choice(temp_options))
+                concentration = random.choice(concentration_range) if concentration_range else random.choice(CONCEN_D)
+                printing_gap = random.choice(printing_gaps) if printing_gaps else 50
+                precursor_volume = random.choice(precursor_vol) if precursor_vol else random.choice(PREC_VOL_D)
+                
+                # make all the parameters normalized between 0 and 1 using min-max normalization
+                motor_speed_norm = (math.log10(motor_speed) - log_speed_min) / (log_speed_max - log_speed_min)
+                temperature_norm = (temperature - min(temp_options)) / (max(temp_options) - min(temp_options))
+                concentration_norm = (concentration - min(concentration_range)) / (max(concentration_range) - min(concentration_range))
+                printing_gap_norm = (printing_gap - min(printing_gaps)) / (max(printing_gaps) - min(printing_gaps))
+                precursor_volume_norm = (precursor_volume - min(precursor_vol)) / (max(precursor_vol) - min(precursor_vol))
+
+                parameter_set = {
+                    "sample_no": sample_count,
+                    "campaign_name": campaign_name,
+                    "polymer_name": polymer_name,
+                    "smile_string": smile_string,
+                    "mw": mw,
+                    "pdi": pdi,
+                    "motor_speed": motor_speed,
+                    "temperature": temperature,
+                    "concentration": concentration,
+                    "printing_gap": printing_gap,
+                    "precursor_volume": precursor_volume,
+                    "solvent": solvent,
+                    "motor_speed_norm": motor_speed_norm,
+                    "temperature_norm": temperature_norm,
+                    "concentration_norm": concentration_norm,
+                    "printing_gap_norm": printing_gap_norm,
+                    "precursor_volume_norm": precursor_volume_norm
+                }
+                
+                parameter_sets.append(parameter_set)
+                sample_count += 1
+        
+        df = pd.DataFrame(parameter_sets)
+
+        table = dash_table.DataTable(
+            id="sampler-results",
+            columns=[
+                {"name": "Sample No", "id": "sample_no"},
+                {"name": "Motor Speed", "id": "motor_speed"},
+                {"name": "Temperature", "id": "temperature"},
+                {"name": "Concentration", "id": "concentration"},
+                {"name": "Printing Gap", "id": "printing_gap"},
+                {"name": "Precursor Volume", "id": "precursor_volume"},
+                {"name": "Solvent", "id": "solvent"},
+            ],
+            data=parameter_sets,
+            style_table={"overflowX": "auto"},
+        )
+
+        if len(df) >= 2:
+            X = df[['motor_speed_norm', 'temperature_norm', 'concentration_norm', 
+                   'printing_gap_norm', 'precursor_volume_norm']].values
+            
+            pca = PCA(n_components=2)
+            pca_result = pca.fit_transform(X)
+            
+            reducer = umap.UMAP(random_state=42, n_neighbors=min(5, len(df)-1))  # Adjust n_neighbors
+            umap_result = reducer.fit_transform(X)
+            
+            pca_fig = px.scatter(
+                x=pca_result[:, 0], 
+                y=pca_result[:, 1],
+                color=df['solvent'],
+                labels={'x': 'PCA Component 1', 'y': 'PCA Component 2'},
+                title='PCA Visualization of Parameter Sets'
+            )
+            
+            umap_fig = px.scatter(
+                x=umap_result[:, 0], 
+                y=umap_result[:, 1],
+                color=df['solvent'],
+                labels={'x': 'UMAP Component 1', 'y': 'UMAP Component 2'},
+                title='UMAP Visualization of Parameter Sets'
+            )
+            
+            res = html.Div([
+                html.H3("Parameter Space Visualizations"),
+                html.Div([
+                    html.Div([
+                        dcc.Graph(figure=pca_fig)
+                    ], className="col-md-6"),
+                    html.Div([
+                        dcc.Graph(figure=umap_fig)
+                    ], className="col-md-6"),
+                ], className="row"),
+                table
+            ])
+        else:
+            res = html.Div([
+                html.H3("Parameter Space Visualizations"),
+                html.P("Not enough data points for visualization. Generate more samples."),
+                html.H3("Generated Parameter Sets"),
+                table
+            ])
+
+        
+        return res, f"Generated {len(parameter_sets)} parameter sets using simple random sampling.", True, "success", False
+    except Exception as e:
+        print(f"Error generating parameter sets: {e}")
+        return None, f"Failed to generate parameter sets: {str(e)}", True, "danger", True
+
+
 
 if __name__ == "__main__":
     app.run(debug=True)
