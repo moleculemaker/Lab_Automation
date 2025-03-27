@@ -63,7 +63,6 @@ layout = html.Div(
         ),
         html.Div(
             [
-                html.H2("Campaign Metadata", className="mt-4"),
                 dbc.Row(
                     [
                         dbc.Col(
@@ -71,7 +70,7 @@ layout = html.Div(
                                 html.H5("Campaign Name"),
                                 dbc.Input(id="sampler-campaign-name", type="text", placeholder="Enter campaign name"),
                             ],
-                            width=3,
+                            width=2,
                         ),
                         dbc.Col(
                             [
@@ -89,22 +88,21 @@ layout = html.Div(
                         ),
                         dbc.Col(
                             [
-                                html.H5("Molecular Weight (MW)"),
+                                html.H5("Molecular Weight"),
                                 dbc.Input(id="sampler-mw", type="number", placeholder="Enter MW", min=0),
                             ],
-                            width=3,
+                            width=2,
                         ),
                         dbc.Col(
                             [
-                                html.H5("Polydispersity Index (PDI)"),
+                                html.H5("Polydispersity Index"),
                                 dbc.Input(id="sampler-pdi", type="number", placeholder="Enter PDI", min=1, step=0.01),
                             ],
-                            width=3,
+                            width=2,
                         ),
                     ],
                     className="mb-3",
                 ),
-                html.H2("Dependent Variables"),
                 dbc.Row(
                     [
                         dbc.Col(
@@ -119,53 +117,52 @@ layout = html.Div(
                             width=6,
                         ),
                         dbc.Col(
-                            [
-                                html.H5("Temperature"),
-                                html.Div(id="sampler-temperature-options", children=[]),
-                            ],
+                            html.Div(
+                                [
+                                    html.H5("Temperature"),
+                                    html.Div(id="sampler-temperature-options", children=[]),
+                                ],
+                                id="temperature-container",
+                                style={'display': 'none'}
+                            ),
                             width=6,
                         ),
                     ],
                     className="mb-3",
                 ),
+                html.H5("Concentration Range"),
                 dbc.Row(
                     [
                         dbc.Col(
                             [
-                                html.H5("Concentration Range"),
                                 dcc.Dropdown(
-                                    id="sampler-concentration-range",
+                                    id={"type": "sampler-dropdown", "id": "concentration"},
                                     options=[{"label": str(concen), "value": concen} for concen in CONCEN_D],
                                     multi=True,
                                     value=CONCEN_D,
                                 ),
                             ],
-                            width=12,
+                            width=4,
                         ),
+                        dbc.Col(
+                            dbc.InputGroup([
+                                dbc.Input(id={"type": "custom-input", "id": "concentration"}, type="number", placeholder="Custom concentration"),
+                                dbc.Button("Add", id={"type": "add-custom-button", "id": "concentration"}, size="sm"),
+                            ]),
+                            width=4,
+                        )
                     ],
                     className="mb-3",
                 ),
-                
-                html.H2("Independent Variables"),
+
+                # Modify the printing gap section
+                html.H5("Printing Gap"),
                 dbc.Row(
                     [
                         dbc.Col(
                             [
-                                html.H5("Motor Speed Range"),
-                                dbc.InputGroup(
-                                    [
-                                        dbc.Input(id="sampler-motor-speed-min", type="number", placeholder="Min", value=SPEED_C[0]),
-                                        dbc.Input(id="sampler-motor-speed-max", type="number", placeholder="Max", value=SPEED_C[1]),
-                                    ]
-                                ),
-                            ],
-                            width=4,
-                        ),
-                        dbc.Col(
-                            [
-                                html.H5("Printing Gap"),
                                 dcc.Dropdown(
-                                    id="sampler-printing-gap-dropdown",
+                                    id={"type": "sampler-dropdown", "id": "printing-gap"},
                                     options=[{"label": str(gap), "value": gap} for gap in PRINT_GAP_D],
                                     multi=True,
                                     value=PRINT_GAP_D,
@@ -174,10 +171,24 @@ layout = html.Div(
                             width=4,
                         ),
                         dbc.Col(
+                            dbc.InputGroup([
+                                dbc.Input(id={"type": "custom-input", "id": "printing-gap"}, type="number", placeholder="Custom printing gap"),
+                                dbc.Button("Add", id={"type": "add-custom-button", "id": "printing-gap"}, size="sm"),
+                            ]),
+                            width=4,
+                        )
+                    ],
+                    className="mb-3",
+                ),
+
+                # Modify the precursor volume section
+                html.H5("Precursor Volume"),
+                dbc.Row(
+                    [
+                        dbc.Col(
                             [
-                                html.H5("Precursor Volume"),
                                 dcc.Dropdown(
-                                    id="sampler-precursor-volume",
+                                    id={"type": "sampler-dropdown", "id": "precursor-volume"},
                                     options=[{"label": str(vol), "value": vol} for vol in PREC_VOL_D],
                                     multi=True,
                                     value=PREC_VOL_D,
@@ -185,11 +196,28 @@ layout = html.Div(
                             ],
                             width=4,
                         ),
+                        dbc.Col(
+                            dbc.InputGroup([
+                                dbc.Input(id={"type": "custom-input", "id": "precursor-volume"}, type="number", placeholder="Custom precursor volume"),
+                                dbc.Button("Add", id={"type": "add-custom-button", "id": "precursor-volume"}, size="sm"),
+                            ]),
+                            width=4,
+                        )
                     ],
                     className="mb-3",
                 ),
-                
-                html.H2("Sampling Configuration"),
+                dbc.Col(
+                    [
+                        html.H5("Motor Speed Range"),
+                        dbc.InputGroup(
+                            [
+                                dbc.Input(id="sampler-motor-speed-min", type="number", placeholder="Min", value=SPEED_C[0]),
+                                dbc.Input(id="sampler-motor-speed-max", type="number", placeholder="Max", value=SPEED_C[1]),
+                            ]
+                        ),
+                    ],
+                    width=4,
+                ),
                 dbc.Row(
                     [
                         dbc.Col(
@@ -224,7 +252,6 @@ layout = html.Div(
                     className="mb-3",
                 ),
                 
-                html.H2("Generated Parameter Sets"),
                 html.Div(id="sampler-results-table", className="mb-3"),
                 
                 dbc.Button(

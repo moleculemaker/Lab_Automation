@@ -10,7 +10,7 @@ from dash import dcc
 from dash import html
 from dash import dash_table
 import dash_ag_grid as dag
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output, State, MATCH, ALL
 import dash_bootstrap_components as dbc
 import os, signal
 import inspect
@@ -2323,28 +2323,80 @@ TEMP_CHOICES_C = {
 }
 
 @app.callback(
+    Output({"type": "sampler-dropdown", "id": MATCH}, "options"),
+    Output({"type": "sampler-dropdown", "id": MATCH}, "value"),
+    Input({"type": "add-custom-button", "id": MATCH}, "n_clicks"),
+    State({"type": "custom-input", "id": MATCH}, "value"),
+    State({"type": "sampler-dropdown", "id": MATCH}, "options"),
+    State({"type": "sampler-dropdown", "id": MATCH}, "value"),
+    prevent_initial_call=True
+)
+def add_custom_value(n_clicks, custom_value, current_options, current_value):
+    if custom_value is not None:
+        new_option = {"label": str(custom_value), "value": custom_value}
+        if new_option not in current_options:
+            current_options.append(new_option)
+            current_value = current_value + [custom_value] if current_value else [custom_value]
+    return current_options, current_value
+
+@app.callback(
+    Output({"type": "sampler-temp-dropdown", "index": MATCH}, "options"),
+    Output({"type": "sampler-temp-dropdown", "index": MATCH}, "value"),
+    Input({"type": "add-custom-temp", "index": MATCH}, "n_clicks"),
+    State({"type": "custom-temp-input", "index": MATCH}, "value"),
+    State({"type": "sampler-temp-dropdown", "index": MATCH}, "options"),
+    State({"type": "sampler-temp-dropdown", "index": MATCH}, "value"),
+    prevent_initial_call=True
+)
+def add_custom_temperature(n_clicks, custom_temp, current_options, current_value):
+    if custom_temp is not None:
+        new_option = {"label": str(custom_temp), "value": custom_temp}
+        if new_option not in current_options:
+            current_options.append(new_option)
+            current_value = current_value + [custom_temp] if current_value else [custom_temp]
+    return current_options, current_value
+
+@app.callback(
+    Output("temperature-container", "style"),
     Output("sampler-temperature-options", "children"),
-    Input("sampler-solvent-dropdown", "value"),
+    Input("sampler-solvent-dropdown", "value")
 )
 def update_temperature_options(selected_solvents):
     if not selected_solvents:
-        return [html.P("Temperature options will appear after selecting solvent(s)")]
+        return {'display': 'none'}, []
     
     temp_options = []
     for solvent in selected_solvents:
         temp_options.append(
             html.Div([
                 html.H6(f"Temperature options for {solvent}:"),
-                dcc.Dropdown(
-                    id=f"sampler-temp-{solvent}",
-                    options=[{"label": temp, "value": temp} for temp in TEMP_CHOICES_D[solvent]],
-                    value=TEMP_CHOICES_D[solvent],
-                    multi=True,
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                dcc.Dropdown(
+                                    id={"type": "sampler-temp-dropdown", "index": solvent},
+                                    options=[{"label": str(temp), "value": temp} for temp in TEMP_CHOICES_D[solvent]],
+                                    value=TEMP_CHOICES_D[solvent],
+                                    multi=True,
+                                ),
+                            ],
+                            width=8,
+                        ),
+                        dbc.Col(
+                            dbc.InputGroup([
+                                dbc.Input(id={"type": "custom-temp-input", "index": solvent}, type="number"),
+                                dbc.Button("Add", id={"type": "add-custom-temp", "index": solvent}, size="sm"),
+                            ]),
+                            width=4,
+                        )
+                    ],
+                    className="mb-3",
                 ),
             ])
         )
     
-    return temp_options
+    return {'display': 'block'}, temp_options
 
 @app.callback(
     Output("sampler-results-table", "children"),
@@ -2360,30 +2412,22 @@ def update_temperature_options(selected_solvents):
         State("sampler-mw", "value"),
         State("sampler-pdi", "value"),
         State("sampler-solvent-dropdown", "value"),
-        State("sampler-concentration-range", "value"),
+        State({"type": "sampler-temp-dropdown", "index": ALL}, "value"),
+        State({"type": "sampler-temp-dropdown", "index": ALL}, "id"),
+        State({"type": "sampler-dropdown", "id": "concentration"}, "value"),
         State("sampler-motor-speed-min", "value"),
         State("sampler-motor-speed-max", "value"),
-        State("sampler-printing-gap-dropdown", "value"),
-        State("sampler-precursor-volume", "value"),
+        State({"type": "sampler-dropdown", "id": "printing-gap"}, "value"),
+        State({"type": "sampler-dropdown", "id": "precursor-volume"}, "value"),
         State("sampler-method-dropdown", "value"),
         State("sampler-num-samples", "value"),
     ],
     prevent_initial_call=True,
 )
 def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smile_string, mw, pdi, 
-                            solvents, concentration_range, motor_speed_min, motor_speed_max, 
-                           printing_gaps, precursor_vol, sampling_method, num_samples):
-    print("generate_parameter_sets")
-    # print the parameters inputted for debugging purposes
-    print(f"Solvents: {solvents}")
-    print(f"Concentration Range: {concentration_range}")
-    print(f"Motor Speed Min: {motor_speed_min}")
-    print(f"Motor Speed Max: {motor_speed_max}")
-    print(f"Printing Gaps: {printing_gaps}")
-    print(f"Precursor Volume: {precursor_vol}")
-    print(f"Sampling Method: {sampling_method}")
-    print(f"Number of Samples: {num_samples}")
-    
+                            solvents, temperatures, temp_ids, concentration_range, 
+                            motor_speed_min, motor_speed_max, printing_gaps, precursor_vol, 
+                            sampling_method, num_samples):
     if not solvents:
         return None, "Please select at least one solvent.", True, "danger", True
     
@@ -2391,8 +2435,10 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smile_string,
         parameter_sets = []
         sample_count = 1
         
+        solvent_temps = {temp_id['index']: temps for temp_id, temps in zip(temp_ids, temperatures)}
+        print(solvent_temps)
         for solvent in solvents:
-            temp_options = TEMP_CHOICES_D.get(solvent, [25])
+            temp_options = solvent_temps.get(solvent, [25])
             
             for _ in range(num_samples):
                 log_speed_min = math.log10(motor_speed_min)
@@ -2406,11 +2452,11 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smile_string,
                 precursor_volume = random.choice(precursor_vol) if precursor_vol else random.choice(PREC_VOL_D)
                 
                 # make all the parameters normalized between 0 and 1 using min-max normalization
-                motor_speed_norm = (math.log10(motor_speed) - log_speed_min) / (log_speed_max - log_speed_min)
-                temperature_norm = (temperature - min(temp_options)) / (max(temp_options) - min(temp_options))
-                concentration_norm = (concentration - min(concentration_range)) / (max(concentration_range) - min(concentration_range))
-                printing_gap_norm = (printing_gap - min(printing_gaps)) / (max(printing_gaps) - min(printing_gaps))
-                precursor_volume_norm = (precursor_volume - min(precursor_vol)) / (max(precursor_vol) - min(precursor_vol))
+                motor_speed_norm = (math.log10(motor_speed) - log_speed_min) / (log_speed_max - log_speed_min) if log_speed_max - log_speed_min != 0 else 0
+                temperature_norm = (temperature - min(temp_options)) / (max(temp_options) - min(temp_options)) if max(temp_options) - min(temp_options) != 0 else 0
+                concentration_norm = (concentration - min(concentration_range)) / (max(concentration_range) - min(concentration_range)) if max(concentration_range) - min(concentration_range) != 0 else 0
+                printing_gap_norm = (printing_gap - min(printing_gaps)) / (max(printing_gaps) - min(printing_gaps)) if max(printing_gaps) - min(printing_gaps) != 0 else 0
+                precursor_volume_norm = (precursor_volume - min(precursor_vol)) / (max(precursor_vol) - min(precursor_vol)) if max(precursor_vol) - min(precursor_vol) != 0 else 0
 
                 parameter_set = {
                     "sample_no": sample_count,
@@ -2549,7 +2595,6 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smile_string,
             )
 
             res = html.Div([
-                html.H3("Parameter Space Visualizations"),
                 html.Div([
                     html.Div([
                         dcc.Graph(figure=pca_fig)
@@ -2562,7 +2607,6 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smile_string,
             ])
         else:
             res = html.Div([
-                html.H3("Parameter Space Visualizations"),
                 html.P("Not enough data points for visualization. Generate more samples."),
                 html.H3("Generated Parameter Sets"),
                 table
