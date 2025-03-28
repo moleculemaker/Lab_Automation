@@ -53,6 +53,33 @@ TEMP_CHOICES_C = {
 
 layout = html.Div(
     [
+        html.Datalist(
+            id="smiles-suggestions",
+            children=[
+                html.Option(value="{O=C(OCC(CCCC)[*]CCCCC)C1=C(C2=CC=CS2)SC(C(S3)=CC(C(OCC(CCCCCC)CCCC)=O)=C3C4=CC=[*]S4)=C1}"),
+                html.Option(value="{COCCOCCOCCOC1=C(C2=C(OCCOCCOCCOC)C=C(S2)[*])SC(C3=CC4=C(S3)C=C(S4)[*])=C1}")
+            ]
+        ),
+        html.Datalist(
+            id="polymer-suggestions",
+            children=[
+                html.Option(value="PDCBT"),
+                html.Option(value="P(g42T-TT)")
+            ]
+        ),
+        html.Datalist(
+            id="mw-suggestions",
+            children=[
+                html.Option(value="60000"),
+                html.Option(value="40000")
+            ]
+        ),
+        html.Datalist(
+            id="pdi-suggestions",
+            children=[
+                html.Option(value="2.5")
+            ]
+        ),
         html.H1("Sampler"),
         dbc.Alert(
             id="sampler-alert",
@@ -75,30 +102,61 @@ layout = html.Div(
                         dbc.Col(
                             [
                                 html.H5("Polymer Name"),
-                                dbc.Input(id="sampler-polymer-name", type="text", placeholder="Enter polymer name"),
+                                dbc.Input(id="sampler-polymer-name", type="text", placeholder="Enter polymer name", list="polymer-suggestions"),
                             ],
                             width=3,
                         ),
                         dbc.Col(
                             [
-                                html.H5("SMILE String"),
-                                dbc.Input(id="sampler-smile-string", type="text", placeholder="Enter SMILE string"),
+                                html.H5("SMILES String"),
+                                dbc.Input(id="sampler-smiles-string", type="text", placeholder="Enter SMILES string", list="smiles-suggestions"),
                             ],
                             width=3,
                         ),
                         dbc.Col(
                             [
                                 html.H5("Molecular Weight"),
-                                dbc.Input(id="sampler-mw", type="number", placeholder="Enter MW", min=0),
+                                dbc.Input(id="sampler-mw", type="number", placeholder="Enter MW", min=0, list="mw-suggestions"),
                             ],
                             width=2,
                         ),
                         dbc.Col(
                             [
                                 html.H5("Polydispersity Index"),
-                                dbc.Input(id="sampler-pdi", type="number", placeholder="Enter PDI", min=1, step=0.01),
+                                dbc.Input(id="sampler-pdi", type="number", placeholder="Enter PDI", min=1, step=0.01, list="pdi-suggestions"),
                             ],
                             width=2,
+                        ),
+                    ],
+                    className="mb-3",
+                ),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                html.H5("Upload Polymer Image"),
+                                dcc.Upload(
+                                    id="sampler-polymer-image",
+                                    children=html.Div([
+                                        'Drag and Drop or ',
+                                        html.A('Select an Image')
+                                    ]),
+                                    style={
+                                        'width': '100%',
+                                        'height': '60px',
+                                        'lineHeight': '60px',
+                                        'borderWidth': '1px',
+                                        'borderStyle': 'dashed',
+                                        'borderRadius': '5px',
+                                        'textAlign': 'center',
+                                        'margin': '10px 0'
+                                    },
+                                    multiple=False,
+                                    accept='image/*'
+                                ),
+                                html.Div(id="sampler-polymer-image-preview"),
+                            ],
+                            width=12,
                         ),
                     ],
                     className="mb-3",

@@ -2357,6 +2357,21 @@ def add_custom_temperature(n_clicks, custom_temp, current_options, current_value
     return current_options, current_value
 
 @app.callback(
+    Output("sampler-polymer-image-preview", "children"),
+    Input("sampler-polymer-image", "contents"),
+    State("sampler-polymer-image", "filename"),
+    prevent_initial_call=True
+)
+def update_image_preview(contents, filename):
+    if contents is None:
+        return []
+    
+    return html.Div([
+        html.Img(src=contents, style={'maxHeight': '200px', 'maxWidth': '100%'}),
+        html.P(filename)
+    ])
+
+@app.callback(
     Output("temperature-container", "style"),
     Output("sampler-temperature-options", "children"),
     Input("sampler-solvent-dropdown", "value")
@@ -2408,7 +2423,7 @@ def update_temperature_options(selected_solvents):
     [
         State("sampler-campaign-name", "value"),
         State("sampler-polymer-name", "value"),
-        State("sampler-smile-string", "value"),
+        State("sampler-smiles-string", "value"),
         State("sampler-mw", "value"),
         State("sampler-pdi", "value"),
         State("sampler-solvent-dropdown", "value"),
@@ -2424,7 +2439,7 @@ def update_temperature_options(selected_solvents):
     ],
     prevent_initial_call=True,
 )
-def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smile_string, mw, pdi, 
+def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smiles_string, mw, pdi, 
                             solvents, temperatures, temp_ids, concentration_range, 
                             motor_speed_min, motor_speed_max, printing_gaps, precursor_vol, 
                             sampling_method, num_samples):
@@ -2462,7 +2477,7 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smile_string,
                     "sample_no": sample_count,
                     "campaign_name": campaign_name,
                     "polymer_name": polymer_name,
-                    "smile_string": smile_string,
+                    "smiles_string": smiles_string,
                     "mw": mw,
                     "pdi": pdi,
                     "motor_speed": motor_speed,
