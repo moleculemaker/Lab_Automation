@@ -188,93 +188,269 @@ layout = html.Div(
                     ],
                     className="mb-3",
                 ),
-                html.H5("Concentration Range"),
                 dbc.Row(
                     [
+                        dbc.Col([html.H5("Concentration Range")], width=2),
                         dbc.Col(
                             [
-                                dcc.Dropdown(
-                                    id={"type": "sampler-dropdown", "id": "concentration"},
-                                    options=[{"label": str(concen), "value": concen} for concen in CONCEN_D],
-                                    multi=True,
-                                    value=CONCEN_D,
+                                dbc.Switch(
+                                    id={"type": "toggle", "param": "concentration"},
+                                    label="Continuous",
+                                    value=False,
                                 ),
                             ],
-                            width=4,
+                            width=2,
                         ),
-                        dbc.Col(
-                            dbc.InputGroup([
-                                dbc.Input(id={"type": "custom-input", "id": "concentration"}, type="number", placeholder="Custom concentration"),
-                                dbc.Button("Add", id={"type": "add-custom-button", "id": "concentration"}, size="sm"),
-                            ]),
-                            width=4,
-                        )
                     ],
-                    className="mb-3",
+                    className="mb-2",
                 ),
-
-                # Modify the printing gap section
-                html.H5("Printing Gap"),
+                html.Div(
+                    [
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    [
+                                        dcc.Dropdown(
+                                            id={"type": "sampler-dropdown", "id": "concentration"},
+                                            options=[{"label": str(concen), "value": concen} for concen in CONCEN_D],
+                                            multi=True,
+                                            value=CONCEN_D,
+                                        ),
+                                    ],
+                                    width=4,
+                                ),
+                                dbc.Col(
+                                    dbc.InputGroup([
+                                        dbc.Input(id="custom-concentration-input", type="number", placeholder="Custom concentration"),
+                                        dbc.Button("Add", id="add-custom-concentration", size="sm"),
+                                    ]),
+                                    width=4,
+                                )
+                            ],
+                            className="mb-3",
+                        ),
+                    ],
+                    id={"type": "discrete-container", "param": "concentration"},
+                ),
+                html.Div(
+                    [
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    [
+                                        dbc.InputGroup(
+                                            [
+                                                dbc.Input(id="concentration-min", type="number", placeholder="Min", value=CONCEN_C[0]),
+                                                dbc.Input(id="concentration-max", type="number", placeholder="Max", value=CONCEN_C[1]),
+                                            ]
+                                        ),
+                                    ],
+                                    width=4,
+                                ),
+                            ],
+                            className="mb-3",
+                        ),
+                    ],
+                    id={"type": "continuous-container", "param": "concentration"},
+                    style={"display": "none"},
+                ),
                 dbc.Row(
                     [
+                        dbc.Col([html.H5("Printing Gap")], width=2),
                         dbc.Col(
                             [
-                                dcc.Dropdown(
-                                    id={"type": "sampler-dropdown", "id": "printing-gap"},
-                                    options=[{"label": str(gap), "value": gap} for gap in PRINT_GAP_D],
-                                    multi=True,
-                                    value=PRINT_GAP_D,
+                                dbc.Switch(
+                                    id={"type": "toggle", "param": "printing-gap"},
+                                    label="Continuous",
+                                    value=False,
                                 ),
                             ],
-                            width=4,
+                            width=2,
                         ),
-                        dbc.Col(
-                            dbc.InputGroup([
-                                dbc.Input(id={"type": "custom-input", "id": "printing-gap"}, type="number", placeholder="Custom printing gap"),
-                                dbc.Button("Add", id={"type": "add-custom-button", "id": "printing-gap"}, size="sm"),
-                            ]),
-                            width=4,
-                        )
                     ],
-                    className="mb-3",
+                    className="mb-2",
                 ),
-
-                # Modify the precursor volume section
-                html.H5("Precursor Volume"),
+                html.Div(
+                    [
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    [
+                                        dcc.Dropdown(
+                                            id={"type": "sampler-dropdown", "id": "printing-gap"},
+                                            options=[{"label": str(gap), "value": gap} for gap in PRINT_GAP_D],
+                                            multi=True,
+                                            value=PRINT_GAP_D,
+                                        ),
+                                    ],
+                                    width=4,
+                                ),
+                                dbc.Col(
+                                    dbc.InputGroup([
+                                        dbc.Input(id={"type": "custom-input", "id": "printing-gap"}, type="number", placeholder="Custom printing gap"),
+                                        dbc.Button("Add", id={"type": "add-custom-button", "id": "printing-gap"}, size="sm"),
+                                    ]),
+                                    width=4,
+                                )
+                            ],
+                            className="mb-3",
+                        ),
+                    ],
+                    id={"type": "discrete-container", "param": "printing-gap"},
+                ),
+                html.Div(
+                    [
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    [
+                                        dbc.InputGroup(
+                                            [
+                                                dbc.Input(id="printing-gap-min", type="number", placeholder="Min", value=PRINT_GAP_D[0]),
+                                                dbc.Input(id="printing-gap-max", type="number", placeholder="Max", value=PRINT_GAP_D[-1]),
+                                            ]
+                                        ),
+                                    ],
+                                    width=4,
+                                ),
+                            ],
+                            className="mb-3",
+                        ),
+                    ],
+                    id={"type": "continuous-container", "param": "printing-gap"},
+                    style={"display": "none"},
+                ),
                 dbc.Row(
                     [
+                        dbc.Col([html.H5("Precursor Volume")], width=2),
                         dbc.Col(
                             [
-                                dcc.Dropdown(
-                                    id={"type": "sampler-dropdown", "id": "precursor-volume"},
-                                    options=[{"label": str(vol), "value": vol} for vol in PREC_VOL_D],
-                                    multi=True,
-                                    value=PREC_VOL_D,
+                                dbc.Switch(
+                                    id={"type": "toggle", "param": "precursor-volume"},
+                                    label="Continuous",
+                                    value=False,
                                 ),
                             ],
-                            width=4,
+                            width=2,
                         ),
-                        dbc.Col(
-                            dbc.InputGroup([
-                                dbc.Input(id={"type": "custom-input", "id": "precursor-volume"}, type="number", placeholder="Custom precursor volume"),
-                                dbc.Button("Add", id={"type": "add-custom-button", "id": "precursor-volume"}, size="sm"),
-                            ]),
-                            width=4,
-                        )
                     ],
-                    className="mb-3",
+                    className="mb-2",
                 ),
-                dbc.Col(
+                html.Div(
                     [
-                        html.H5("Motor Speed Range"),
-                        dbc.InputGroup(
+                        dbc.Row(
                             [
-                                dbc.Input(id="sampler-motor-speed-min", type="number", placeholder="Min", value=SPEED_C[0]),
-                                dbc.Input(id="sampler-motor-speed-max", type="number", placeholder="Max", value=SPEED_C[1]),
-                            ]
+                                dbc.Col(
+                                    [
+                                        dcc.Dropdown(
+                                            id={"type": "sampler-dropdown", "id": "precursor-volume"},
+                                            options=[{"label": str(vol), "value": vol} for vol in PREC_VOL_D],
+                                            multi=True,
+                                            value=PREC_VOL_D,
+                                        ),
+                                    ],
+                                    width=4,
+                                ),
+                                dbc.Col(
+                                    dbc.InputGroup([
+                                        dbc.Input(id={"type": "custom-input", "id": "precursor-volume"}, type="number", placeholder="Custom precursor volume"),
+                                        dbc.Button("Add", id={"type": "add-custom-button", "id": "precursor-volume"}, size="sm"),
+                                    ]),
+                                    width=4,
+                                )
+                            ],
+                            className="mb-3",
                         ),
                     ],
-                    width=4,
+                    id={"type": "discrete-container", "param": "precursor-volume"},
+                ),
+                html.Div(
+                    [
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    [
+                                        dbc.InputGroup(
+                                            [
+                                                dbc.Input(id="precursor-volume-min", type="number", placeholder="Min", value=PREC_VOL_C[0]),
+                                                dbc.Input(id="precursor-volume-max", type="number", placeholder="Max", value=PREC_VOL_C[1]),
+                                            ]
+                                        ),
+                                    ],
+                                    width=4,
+                                ),
+                            ],
+                            className="mb-3",
+                        ),
+                    ],
+                    id={"type": "continuous-container", "param": "precursor-volume"},
+                    style={"display": "none"},
+                ),
+                dbc.Row(
+                    [
+                        dbc.Col([html.H5("Motor Speed Range")], width=2),
+                        dbc.Col(
+                            [
+                                dbc.Switch(
+                                    id={"type": "toggle", "param": "motor-speed"},
+                                    label="Continuous",
+                                    value=False,
+                                ),
+                            ],
+                            width=2,
+                        ),
+                    ],
+                    className="mb-2",
+                ),
+                html.Div(
+                    [
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    [
+                                        dcc.Dropdown(
+                                            id={"type": "sampler-dropdown", "id": "motor-speed"},
+                                            options=[{"label": str(speed), "value": speed} for speed in MOTOR_SPEEDS_D],
+                                            multi=True,
+                                            value=MOTOR_SPEEDS_D,
+                                        ),
+                                    ],
+                                    width=4,
+                                ),
+                                dbc.Col(
+                                    dbc.InputGroup([
+                                        dbc.Input(id={"type": "custom-input", "id": "motor-speed"}, type="number", placeholder="Custom motor speed"),
+                                        dbc.Button("Add", id={"type": "add-custom-button", "id": "motor-speed"}, size="sm"),
+                                    ]),
+                                    width=4,
+                                )
+                            ],
+                            className="mb-3",
+                        ),
+                    ],
+                    id={"type": "discrete-container", "param": "motor-speed"},
+                ),
+                html.Div(
+                    [
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    [
+                                        dbc.InputGroup(
+                                            [
+                                                dbc.Input(id="motor-speed-min", type="number", placeholder="Min", value=SPEED_C[0]),
+                                                dbc.Input(id="motor-speed-max", type="number", placeholder="Max", value=SPEED_C[1]),
+                                            ]
+                                        ),
+                                    ],
+                                    width=4,
+                                ),
+                            ],
+                            className="mb-3",
+                        ),
+                    ],
+                    id={"type": "continuous-container", "param": "motor-speed"},
+                    style={"display": "none"},
                 ),
                 dbc.Row(
                     [

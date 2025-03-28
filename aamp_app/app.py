@@ -2322,6 +2322,7 @@ TEMP_CHOICES_C = {
     "decane": (25, 135),
 }
 
+# adding custom discrete parameter options
 @app.callback(
     Output({"type": "sampler-dropdown", "id": MATCH}, "options"),
     Output({"type": "sampler-dropdown", "id": MATCH}, "value"),
@@ -2356,6 +2357,18 @@ def add_custom_temperature(n_clicks, custom_temp, current_options, current_value
             current_value = current_value + [custom_temp] if current_value else [custom_temp]
     return current_options, current_value
 
+# updating based on selections and inputs
+@app.callback(
+    Output({"type": "discrete-container", "param": MATCH}, "style"),
+    Output({"type": "continuous-container", "param": MATCH}, "style"),
+    Input({"type": "toggle", "param": MATCH}, "value")
+)
+def toggle_input_type(is_continuous):
+    if is_continuous:
+        return {"display": "none"}, {"display": "block"}
+    else:
+        return {"display": "block"}, {"display": "none"}
+    
 @app.callback(
     Output("sampler-polymer-image-preview", "children"),
     Input("sampler-polymer-image", "contents"),
@@ -2384,29 +2397,71 @@ def update_temperature_options(selected_solvents):
     for solvent in selected_solvents:
         temp_options.append(
             html.Div([
-                html.H6(f"Temperature options for {solvent}:"),
                 dbc.Row(
                     [
+                        dbc.Col([html.H6(f"Temperature for {solvent}:")], width=8),
                         dbc.Col(
                             [
-                                dcc.Dropdown(
-                                    id={"type": "sampler-temp-dropdown", "index": solvent},
-                                    options=[{"label": str(temp), "value": temp} for temp in TEMP_CHOICES_D[solvent]],
-                                    value=TEMP_CHOICES_D[solvent],
-                                    multi=True,
+                                dbc.Switch(
+                                    id={"type": "toggle", "param": f"temp-{solvent}"},
+                                    label="Continuous",
+                                    value=False,
                                 ),
                             ],
-                            width=8,
+                            width=2,
                         ),
-                        dbc.Col(
-                            dbc.InputGroup([
-                                dbc.Input(id={"type": "custom-temp-input", "index": solvent}, type="number"),
-                                dbc.Button("Add", id={"type": "add-custom-temp", "index": solvent}, size="sm"),
-                            ]),
-                            width=4,
-                        )
                     ],
-                    className="mb-3",
+                    className="mb-2",
+                ),
+                html.Div(
+                    [
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    [
+                                        dcc.Dropdown(
+                                            id={"type": "sampler-temp-dropdown", "index": solvent},
+                                            options=[{"label": str(temp), "value": temp} for temp in TEMP_CHOICES_D[solvent]],
+                                            multi=True,
+                                            value=TEMP_CHOICES_D[solvent],
+                                        ),
+                                    ],
+                                    width=8,
+                                ),
+                                dbc.Col(
+                                    dbc.InputGroup([
+                                        dbc.Input(id={"type": "custom-temp-input", "index": solvent}, type="number", placeholder="Custom temperature"),
+                                        dbc.Button("Add", id={"type": "add-custom-temp", "index": solvent}, size="sm"),
+                                    ]),
+                                    width=4,
+                                )
+                            ],
+                            className="mb-3",
+                        ),
+                    ],
+                    id={"type": "discrete-container", "param": f"temp-{solvent}"},
+                ),
+                html.Div(
+                    [
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    [
+                                        dbc.InputGroup(
+                                            [
+                                                dbc.Input(id={"type": "temp-min", "index": solvent}, type="number", placeholder="Min", value=TEMP_CHOICES_C[solvent][0]),
+                                                dbc.Input(id={"type": "temp-max", "index": solvent}, type="number", placeholder="Max", value=TEMP_CHOICES_C[solvent][1]),
+                                            ]
+                                        ),
+                                    ],
+                                    width=4,
+                                ),
+                            ],
+                            className="mb-3",
+                        ),
+                    ],
+                    id={"type": "continuous-container", "param": f"temp-{solvent}"},
+                    style={"display": "none"},
                 ),
             ])
         )
@@ -2427,51 +2482,146 @@ def update_temperature_options(selected_solvents):
         State("sampler-mw", "value"),
         State("sampler-pdi", "value"),
         State("sampler-solvent-dropdown", "value"),
+        State({"type": "toggle", "param": ALL}, "value"),
+        State({"type": "toggle", "param": ALL}, "id"),
         State({"type": "sampler-temp-dropdown", "index": ALL}, "value"),
         State({"type": "sampler-temp-dropdown", "index": ALL}, "id"),
+        State({"type": "temp-min", "index": ALL}, "value"),
+        State({"type": "temp-min", "index": ALL}, "id"),
+        State({"type": "temp-max", "index": ALL}, "value"),
+        State({"type": "temp-max", "index": ALL}, "id"),
         State({"type": "sampler-dropdown", "id": "concentration"}, "value"),
-        State("sampler-motor-speed-min", "value"),
-        State("sampler-motor-speed-max", "value"),
+        State({"type": "toggle", "param": "concentration"}, "value"),
+        State("concentration-min", "value"),
+        State("concentration-max", "value"),
         State({"type": "sampler-dropdown", "id": "printing-gap"}, "value"),
+        State({"type": "toggle", "param": "printing-gap"}, "value"),
+        State("printing-gap-min", "value"),
+        State("printing-gap-max", "value"),
         State({"type": "sampler-dropdown", "id": "precursor-volume"}, "value"),
+        State({"type": "toggle", "param": "precursor-volume"}, "value"),
+        State("precursor-volume-min", "value"),
+        State("precursor-volume-max", "value"),
+        State({"type": "sampler-dropdown", "id": "motor-speed"}, "value"),
+        State({"type": "toggle", "param": "motor-speed"}, "value"),
+        State("motor-speed-min", "value"),
+        State("motor-speed-max", "value"),
         State("sampler-method-dropdown", "value"),
         State("sampler-num-samples", "value"),
     ],
     prevent_initial_call=True,
 )
 def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smiles_string, mw, pdi, 
-                            solvents, temperatures, temp_ids, concentration_range, 
-                            motor_speed_min, motor_speed_max, printing_gaps, precursor_vol, 
+                            solvents, toggle_values, toggle_ids, temp_dropdown_values, 
+                            temp_dropdown_ids, temp_min_values, temp_min_ids, 
+                            temp_max_values, temp_max_ids, concentration_range, 
+                            concentration_toggle, concentration_min, concentration_max, 
+                            printing_gaps, printing_gap_toggle, printing_gap_min, 
+                            printing_gap_max, precursor_vol, precursor_vol_toggle, 
+                            precursor_vol_min, precursor_vol_max, motor_speeds, 
+                            motor_speed_toggle, motor_speed_min, motor_speed_max, 
                             sampling_method, num_samples):
     if not solvents:
         return None, "Please select at least one solvent.", True, "danger", True
     
     try:
+        temp_toggles = {}
+        temp_discrete_values = {}
+        temp_min = {}
+        temp_max = {}
+        
+        for toggle_value, toggle_id in zip(toggle_values, toggle_ids):
+            param = toggle_id["param"]
+            if param.startswith("temp-"):
+                solvent = param.replace("temp-", "")
+                temp_toggles[solvent] = toggle_value
+        
+        for dropdown_value, dropdown_id in zip(temp_dropdown_values, temp_dropdown_ids):
+            solvent = dropdown_id["index"]
+            temp_discrete_values[solvent] = dropdown_value
+        
+        for min_value, min_id in zip(temp_min_values, temp_min_ids):
+            solvent = min_id["index"]
+            temp_min[solvent] = min_value
+        
+        for max_value, max_id in zip(temp_max_values, temp_max_ids):
+            solvent = max_id["index"]
+            temp_max[solvent] = max_value
+
         parameter_sets = []
         sample_count = 1
         
-        solvent_temps = {temp_id['index']: temps for temp_id, temps in zip(temp_ids, temperatures)}
-        print(solvent_temps)
         for solvent in solvents:
-            temp_options = solvent_temps.get(solvent, [25])
+            is_temp_continuous = temp_toggles.get(solvent, False)
             
             for _ in range(num_samples):
-                log_speed_min = math.log10(motor_speed_min)
-                log_speed_max = math.log10(motor_speed_max)
-                log_speed = log_speed_min + random.random() * (log_speed_max - log_speed_min)
-                motor_speed = round(10 ** log_speed, 2)  
+                if is_temp_continuous:
+                    min_temp = temp_min.get(solvent, TEMP_CHOICES_C[solvent][0])
+                    max_temp = temp_max.get(solvent, TEMP_CHOICES_C[solvent][1])
+                    temperature = round(random.uniform(min_temp, max_temp))
+                else:
+                    temp_options = temp_discrete_values.get(solvent, TEMP_CHOICES_D[solvent])
+                    temperature = round(random.choice(temp_options))
 
-                temperature = round(random.choice(temp_options))
-                concentration = random.choice(concentration_range) if concentration_range else random.choice(CONCEN_D)
-                printing_gap = random.choice(printing_gaps) if printing_gaps else 50
-                precursor_volume = random.choice(precursor_vol) if precursor_vol else random.choice(PREC_VOL_D)
+                if concentration_toggle:
+                    concentration = round(random.uniform(concentration_min, concentration_max), 2)
+                else:
+                    concentration = random.choice(concentration_range) if concentration_range else random.choice(CONCEN_D)
+
+                if printing_gap_toggle:
+                    printing_gap = round(random.uniform(printing_gap_min, printing_gap_max))
+                else:
+                    printing_gap = random.choice(printing_gaps) if printing_gaps else random.choice(PRINT_GAP_D)
+                
+                if precursor_vol_toggle:
+                    precursor_volume = round(random.uniform(precursor_vol_min, precursor_vol_max), 1)
+                else:
+                    precursor_volume = random.choice(precursor_vol) if precursor_vol else random.choice(PREC_VOL_D)
+
+                if motor_speed_toggle:
+                    log_speed_min = math.log10(motor_speed_min)
+                    log_speed_max = math.log10(motor_speed_max)
+                    log_speed = log_speed_min + random.random() * (log_speed_max - log_speed_min)
+                    motor_speed = round(10 ** log_speed, 2)
+                else:
+                    motor_speed = random.choice(motor_speeds) if motor_speeds else random.choice(MOTOR_SPEEDS_D)
                 
                 # make all the parameters normalized between 0 and 1 using min-max normalization
-                motor_speed_norm = (math.log10(motor_speed) - log_speed_min) / (log_speed_max - log_speed_min) if log_speed_max - log_speed_min != 0 else 0
-                temperature_norm = (temperature - min(temp_options)) / (max(temp_options) - min(temp_options)) if max(temp_options) - min(temp_options) != 0 else 0
-                concentration_norm = (concentration - min(concentration_range)) / (max(concentration_range) - min(concentration_range)) if max(concentration_range) - min(concentration_range) != 0 else 0
-                printing_gap_norm = (printing_gap - min(printing_gaps)) / (max(printing_gaps) - min(printing_gaps)) if max(printing_gaps) - min(printing_gaps) != 0 else 0
-                precursor_volume_norm = (precursor_volume - min(precursor_vol)) / (max(precursor_vol) - min(precursor_vol)) if max(precursor_vol) - min(precursor_vol) != 0 else 0
+                if motor_speed_toggle:
+                    log_speed_min = math.log10(motor_speed_min)
+                    log_speed_max = math.log10(motor_speed_max)
+                    motor_speed_norm = (math.log10(motor_speed) - log_speed_min) / (log_speed_max - log_speed_min) if log_speed_max - log_speed_min != 0 else 0
+                else:
+                    motor_speeds_list = motor_speeds if motor_speeds else MOTOR_SPEEDS_D
+                    log_min = math.log10(min(motor_speeds_list))
+                    log_max = math.log10(max(motor_speeds_list))
+                    motor_speed_norm = (math.log10(motor_speed) - log_min) / (log_max - log_min) if log_max - log_min != 0 else 0
+
+                if is_temp_continuous:
+                    min_temp = temp_min.get(solvent, TEMP_CHOICES_C[solvent][0])
+                    max_temp = temp_max.get(solvent, TEMP_CHOICES_C[solvent][1])
+                    temperature_norm = (temperature - min_temp) / (max_temp - min_temp)
+                else:
+                    temp_options = temp_discrete_values.get(solvent, TEMP_CHOICES_D[solvent])
+                    temperature_norm = (temperature - min(temp_options)) / (max(temp_options) - min(temp_options))
+
+                if concentration_toggle:
+                    concentration_norm = (concentration - concentration_min) / (concentration_max - concentration_min) if concentration_max - concentration_min != 0 else 0
+                else:
+                    concentration_list = concentration_range if concentration_range else CONCEN_D
+                    concentration_norm = (concentration - min(concentration_list)) / (max(concentration_list) - min(concentration_list)) if max(concentration_list) - min(concentration_list) != 0 else 0
+
+                if printing_gap_toggle:
+                    printing_gap_norm = (printing_gap - printing_gap_min) / (printing_gap_max - printing_gap_min) if printing_gap_max - printing_gap_min != 0 else 0
+                else:
+                    printing_gaps_list = printing_gaps if printing_gaps else PRINT_GAP_D
+                    printing_gap_norm = (printing_gap - min(printing_gaps_list)) / (max(printing_gaps_list) - min(printing_gaps_list)) if max(printing_gaps_list) - min(printing_gaps_list) != 0 else 0
+
+                if precursor_vol_toggle:
+                    precursor_volume_norm = (precursor_volume - precursor_vol_min) / (precursor_vol_max - precursor_vol_min) if precursor_vol_max - precursor_vol_min != 0 else 0
+                else:
+                    precursor_vol_list = precursor_vol if precursor_vol else PREC_VOL_D
+                    precursor_volume_norm = (precursor_volume - min(precursor_vol_list)) / (max(precursor_vol_list) - min(precursor_vol_list)) if max(precursor_vol_list) - min(precursor_vol_list) != 0 else 0
 
                 parameter_set = {
                     "sample_no": sample_count,
