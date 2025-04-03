@@ -90,10 +90,10 @@ else:
 mongo_gridfs = GridFS(mongo.db, collection="recipes")
 fs = GridFS(mongo.db)
 
-solutions.init_collection()
-devices.init_collection()
-films.init_collection()
-recipes.init_collection()
+# solutions.init_collection()
+# devices.init_collection()
+# films.init_collection()
+# recipes.init_collection()
 
 app = dash.Dash(
     __name__,
@@ -2647,6 +2647,8 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smiles_string
                 sample_count += 1
         
         df = pd.DataFrame(parameter_sets)
+        df = df.sort_values(by=["solvent", "temperature"], ascending=[True, True])
+        parameter_sets = df.to_dict(orient="records")
 
         table = dash_table.DataTable(
             id="sampler-results",
@@ -2783,6 +2785,26 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smiles_string
         print(f"Error generating parameter sets: {e}")
         return None, f"Failed to generate parameter sets: {str(e)}", True, "danger", True
 
+
+# @app.callback(
+#     Output("sampler-save-alert", "children"),
+#     Output("sampler-save-alert", "is_open"),
+#     Output("sampler-save-alert", "color"),
+#     Input("sampler-save-button", "n_clicks"),
+#     State("sampler-results", "data"),
+#     prevent_initial_call=True
+# )
+# def save_parameter_sets_to_mongo(n_clicks, parameter_sets):
+#     if not parameter_sets:
+#         return "No parameter sets to save.", True, "warning"
+    
+#     try:
+#         result = mongo.db["parameters"].insert_many(parameter_sets)
+        
+#         return f"Successfully saved {len(result.inserted_ids)} parameter sets to MongoDB.", True, "success"
+#     except Exception as e:
+#         print(f"Failed to save parameter sets to MongoDB: {e}")
+#         return f"Failed to save parameter sets: {str(e)}", True, "danger"
 
 
 if __name__ == "__main__":
