@@ -23,6 +23,8 @@ import numpy as np
 import pandas as pd
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
+import base64
+import io
 import umap
 import plotly.express as px
 import plotly.graph_objects as go
@@ -100,6 +102,7 @@ app = dash.Dash(
     external_stylesheets=[dbc.themes.BOOTSTRAP],
     use_pages=True,
     prevent_initial_callbacks="initial_duplicate",
+    suppress_callback_exceptions=True,
 )
 server = app.server
 
@@ -2368,21 +2371,46 @@ def toggle_input_type(is_continuous):
         return {"display": "none"}, {"display": "block"}
     else:
         return {"display": "block"}, {"display": "none"}
-    
+
 @app.callback(
-    Output("sampler-polymer-image-preview", "children"),
-    Input("sampler-polymer-image", "contents"),
-    State("sampler-polymer-image", "filename"),
+    Output("gpc-data-output", "children"),
+    Output("gpc-data-store", "data"),
+    Input("gpc-data-upload", "contents"),
+    State("gpc-data-upload", "filename"),
     prevent_initial_call=True
 )
-def update_image_preview(contents, filename):
+def process_gpc_data(contents, filename):
     if contents is None:
-        return []
+        return html.Div("No file uploaded yet."), None
     
-    return html.Div([
-        html.Img(src=contents, style={'maxHeight': '200px', 'maxWidth': '100%'}),
-        html.P(filename)
-    ])
+    content_type, content_string = contents.split(',')
+    decoded = base64.b64decode(content_string)
+    
+    try:
+        if filename.endswith('.csv'):
+            df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+        elif filename.endswith(('.xlsx', '.xls')):
+            df = pd.read_excel(io.BytesIO(decoded))
+        else:
+            return html.Div("Unsupported file type."), None
+        
+        gpc_data = df.to_dict('records')
+        
+        preview = html.Div([
+            html.H5(f"GPC Data from {filename}"),
+            html.P(f"Successfully loaded {len(df)} rows"),
+            dash_table.DataTable(
+                data=df.head(5).to_dict('records'),
+                columns=[{'name': i, 'id': i} for i in df.columns],
+                style_table={'overflowX': 'auto'},
+            ),
+        ])
+        return preview, gpc_data
+    
+    except Exception as e:
+        return html.Div(f"Error processing file: {str(e)}"), None
+
+    
 
 @app.callback(
     Output("temperature-container", "style"),
@@ -2786,25 +2814,67 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smiles_string
         return None, f"Failed to generate parameter sets: {str(e)}", True, "danger", True
 
 
-# @app.callback(
-#     Output("sampler-save-alert", "children"),
-#     Output("sampler-save-alert", "is_open"),
-#     Output("sampler-save-alert", "color"),
-#     Input("sampler-save-button", "n_clicks"),
-#     State("sampler-results", "data"),
-#     prevent_initial_call=True
-# )
-# def save_parameter_sets_to_mongo(n_clicks, parameter_sets):
-#     if not parameter_sets:
-#         return "No parameter sets to save.", True, "warning"
+@app.callback(
+    Output("sampler-alert", "children", allow_duplicate=True),
+    Output("sampler-alert", "is_open", allow_duplicate=True),
+    Output("sampler-alert", "color", allow_duplicate=True),
+    Output("sampler-save-button", "disabled", allow_duplicate=True),
+    Input("sampler-save-button", "n_clicks"),
+    State("sampler-results", "data"),
+    State("gpc-data-store", "data"),
+    State("sampler-campaign-name", "value"),
+    State("sampler-polymer-name", "value"),
+    State("sampler-smiles-string", "value"),
+    State("sampler-mw", "value"),
+    State("sampler-pdi", "value"),
+    prevent_initial_call=True
+)
+def save_parameter_sets_to_mongo(n_clicks, parameter_sets, gpc_data, campaign_name, polymer_name, 
+                                smiles_string, mw, pdi):
+    if not parameter_sets:
+        return "No parameter sets to save.", True, "warning", True
     
-#     try:
-#         result = mongo.db["parameters"].insert_many(parameter_sets)
+    try:
+        campaign_doc = {
+            "campaign_name": campaign_name,
+            "polymer_name": polymer_name,
+            "smiles_string": smiles_string,
+            "mw": mw,
+            "pdi": pdi
+        }
         
-#         return f"Successfully saved {len(result.inserted_ids)} parameter sets to MongoDB.", True, "success"
-#     except Exception as e:
-#         print(f"Failed to save parameter sets to MongoDB: {e}")
-#         return f"Failed to save parameter sets: {str(e)}", True, "danger"
+        if gpc_data:
+            campaign_doc["gpc"] = gpc_data
+        
+        campaign_result = mongo.db["campaigns"].insert_one(campaign_doc)
+        campaign_id = campaign_result.inserted_id
+        
+        sets_to_insert = []
+        for param_set in parameter_sets:
+            set_doc = {
+                "campaign_id": campaign_id,  # Reference to the campaign
+                "sample_no": param_set["sample_no"],
+                "motor_speed": param_set["motor_speed"],
+                "temperature": param_set["temperature"],
+                "concentration": param_set["concentration"],
+                "printing_gap": param_set["printing_gap"],
+                "precursor_volume": param_set["precursor_volume"],
+                "solvent": param_set["solvent"],
+                "motor_speed_norm": param_set["motor_speed_norm"],
+                "temperature_norm": param_set["temperature_norm"],
+                "concentration_norm": param_set["concentration_norm"],
+                "printing_gap_norm": param_set["printing_gap_norm"],
+                "precursor_volume_norm": param_set["precursor_volume_norm"]
+            }
+            sets_to_insert.append(set_doc)
+        
+        sets_result = mongo.db["sets"].insert_many(sets_to_insert)
+        
+        return (f"Successfully saved campaign information and {len(sets_result.inserted_ids)} parameter sets to MongoDB.", 
+                True, "success", False)
+    except Exception as e:
+        print(f"Failed to save parameter sets to MongoDB: {e}")
+        return f"Failed to save parameter sets: {str(e)}", True, "danger", True
 
 
 if __name__ == "__main__":

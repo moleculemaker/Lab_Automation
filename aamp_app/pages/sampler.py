@@ -115,14 +115,14 @@ layout = html.Div(
                         ),
                         dbc.Col(
                             [
-                                html.H5("Molecular Weight"),
-                                dbc.Input(id="sampler-mw", type="number", placeholder="Enter MW", min=0, list="mw-suggestions"),
+                                html.H5("Number-Averaged Molecular Weight (Mn)"),
+                                dbc.Input(id="sampler-mw", type="number", placeholder="Enter Mn", min=0, list="mw-suggestions"),
                             ],
                             width=2,
                         ),
                         dbc.Col(
                             [
-                                html.H5("Polydispersity Index"),
+                                html.H5("Polydispersity Index (PDI)"),
                                 dbc.Input(id="sampler-pdi", type="number", placeholder="Enter PDI", min=1, step=0.01, list="pdi-suggestions"),
                             ],
                             width=2,
@@ -130,6 +130,38 @@ layout = html.Div(
                     ],
                     className="mb-3",
                 ),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                html.H5("Upload GPC Data"),
+                                dcc.Upload(
+                                    id="gpc-data-upload",
+                                    children=html.Div([
+                                        'Drag and Drop or ',
+                                        html.A('Select a CSV or Excel File')
+                                    ]),
+                                    style={
+                                        'width': '100%',
+                                        'height': '60px',
+                                        'lineHeight': '60px',
+                                        'borderWidth': '1px',
+                                        'borderStyle': 'dashed',
+                                        'borderRadius': '5px',
+                                        'textAlign': 'center',
+                                        'margin': '10px 0'
+                                    },
+                                    multiple=False,
+                                    accept='.csv, .xlsx, .xls'
+                                ),
+                                html.Div(id="gpc-data-output")
+                            ],
+                            width=12,
+                        ),
+                    ],
+                    className="mb-3",
+                ),
+                dcc.Store(id="gpc-data-store", storage_type="memory"),
                 dbc.Row(
                     [
                         dbc.Col(
