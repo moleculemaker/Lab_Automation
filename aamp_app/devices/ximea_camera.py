@@ -9,7 +9,7 @@ from .device import Device, check_initialized
 # Unsure how cooperative xiapi.Camera is so did not use multiple inheritance
 # will need to figure out the method resolution order if using multiple inheritance
 class XimeaCamera(Device):
-    save_directory = 'data/imaging/'
+    save_directory = '../data/imaging/'
 
     def __init__(self, name: str):
         super().__init__(name)

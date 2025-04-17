@@ -134,6 +134,37 @@ layout = html.Div(
                     [
                         dbc.Col(
                             [
+                                html.H5("Upload Polymer Image"),
+                                dcc.Upload(
+                                    id="sampler-polymer-image",
+                                    children=html.Div([
+                                        'Drag and Drop or ',
+                                        html.A('Select an Image')
+                                    ]),
+                                    style={
+                                        'width': '100%',
+                                        'height': '60px',
+                                        'lineHeight': '60px',
+                                        'borderWidth': '1px',
+                                        'borderStyle': 'dashed',
+                                        'borderRadius': '5px',
+                                        'textAlign': 'center',
+                                        'margin': '10px 0'
+                                    },
+                                    multiple=False,
+                                    accept='image/*'
+                                ),
+                                html.Div(id="sampler-polymer-image-preview"),
+                            ],
+                            width=12,
+                        ),
+                    ],
+                    className="mb-3",
+                ),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
                                 html.H5("Upload GPC Data"),
                                 dcc.Upload(
                                     id="gpc-data-upload",
@@ -162,37 +193,6 @@ layout = html.Div(
                     className="mb-3",
                 ),
                 dcc.Store(id="gpc-data-store", storage_type="memory"),
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [
-                                html.H5("Upload Polymer Image"),
-                                dcc.Upload(
-                                    id="sampler-polymer-image",
-                                    children=html.Div([
-                                        'Drag and Drop or ',
-                                        html.A('Select an Image')
-                                    ]),
-                                    style={
-                                        'width': '100%',
-                                        'height': '60px',
-                                        'lineHeight': '60px',
-                                        'borderWidth': '1px',
-                                        'borderStyle': 'dashed',
-                                        'borderRadius': '5px',
-                                        'textAlign': 'center',
-                                        'margin': '10px 0'
-                                    },
-                                    multiple=False,
-                                    accept='image/*'
-                                ),
-                                html.Div(id="sampler-polymer-image-preview"),
-                            ],
-                            width=12,
-                        ),
-                    ],
-                    className="mb-3",
-                ),
                 dbc.Row(
                     [
                         dbc.Col(

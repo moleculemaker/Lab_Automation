@@ -2325,6 +2325,9 @@ TEMP_CHOICES_C = {
     "decane": (25, 135),
 }
 
+from bson import ObjectId
+import base64
+
 # adding custom discrete parameter options
 @app.callback(
     Output({"type": "sampler-dropdown", "id": MATCH}, "options"),
@@ -2410,6 +2413,60 @@ def process_gpc_data(contents, filename):
     except Exception as e:
         return html.Div(f"Error processing file: {str(e)}"), None
 
+
+@app.callback(
+    Output("sampler-smiles-string", "value"),
+    Output("sampler-polymer-image-preview", "children"),
+    Input("sampler-polymer-name", "value"),
+    Input("sampler-polymer-image", "contents"),
+    State("sampler-polymer-image", "filename"),
+    prevent_initial_call=True
+)
+def handle_polymer_inputs(polymer_name, image_contents, image_filename):
+    ctx = dash.callback_context
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0] if ctx.triggered else None
+    
+    smiles = ""
+    image_preview = []
+
+    if triggered_id == "sampler-polymer-name" and polymer_name:
+        try:
+            campaign = mongo.db.campaigns.find_one({"polymer_name": polymer_name})
+            if campaign:
+                smiles = campaign.get("smiles_string", "")
+                image_id = campaign.get("image_id")
+                if image_id:
+                    try:
+                        grid_out = fs.get(ObjectId(image_id))
+                        image_bytes = grid_out.read()
+                        encoded = base64.b64encode(image_bytes).decode()
+                        mime_type = grid_out.content_type if hasattr(grid_out, "content_type") else "image/png"
+                        src = f"data:{mime_type};base64,{encoded}"
+                        image_preview = [
+                            html.Img(src=src, style={'maxHeight': '200px', 'maxWidth': '100%'}),
+                            html.P(grid_out.filename)
+                        ]
+                    except Exception as e:
+                        print(f"Error retrieving image: {e}")
+        
+        except Exception as e:
+            print(f"Error in polymer name lookup: {e}")
+
+    elif triggered_id == "sampler-polymer-image" and image_contents:
+        try:
+            content_type, content_string = image_contents.split(',')
+            decoded = base64.b64decode(content_string)
+            
+            image_preview = [
+                html.Img(src=image_contents, style={'maxHeight': '200px', 'maxWidth': '100%'}),
+                html.P(image_filename)
+            ]
+            
+        except Exception as e:
+            print(f"Error processing image: {e}")
+            image_preview = [html.P("Invalid image file")]
+
+    return smiles, image_preview
     
 
 @app.callback(
@@ -2827,53 +2884,95 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smiles_string
     State("sampler-smiles-string", "value"),
     State("sampler-mw", "value"),
     State("sampler-pdi", "value"),
+    State("sampler-polymer-image", "contents"),
+    State("sampler-polymer-image", "filename"),
     prevent_initial_call=True
 )
 def save_parameter_sets_to_mongo(n_clicks, parameter_sets, gpc_data, campaign_name, polymer_name, 
-                                smiles_string, mw, pdi):
+                                smiles_string, mw, pdi, image_contents, image_filename):
     if not parameter_sets:
         return "No parameter sets to save.", True, "warning", True
     
     try:
-        campaign_doc = {
-            "campaign_name": campaign_name,
-            "polymer_name": polymer_name,
-            "smiles_string": smiles_string,
-            "mw": mw,
-            "pdi": pdi
-        }
+        image_id = None
+        if image_contents and image_filename:
+            content_type, content_string = image_contents.split(',')
+            decoded = base64.b64decode(content_string)
+            image_id = fs.put(decoded, filename=image_filename)
+
+        existing_campaign = mongo.db.campaigns.find_one({"campaign_name": campaign_name})
         
-        if gpc_data:
-            campaign_doc["gpc"] = gpc_data
-        
-        campaign_result = mongo.db["campaigns"].insert_one(campaign_doc)
-        campaign_id = campaign_result.inserted_id
-        
-        sets_to_insert = []
-        for param_set in parameter_sets:
-            set_doc = {
-                "campaign_id": campaign_id,  # Reference to the campaign
-                "sample_no": param_set["sample_no"],
-                "motor_speed": param_set["motor_speed"],
-                "temperature": param_set["temperature"],
-                "concentration": param_set["concentration"],
-                "printing_gap": param_set["printing_gap"],
-                "precursor_volume": param_set["precursor_volume"],
-                "solvent": param_set["solvent"],
-                "motor_speed_norm": param_set["motor_speed_norm"],
-                "temperature_norm": param_set["temperature_norm"],
-                "concentration_norm": param_set["concentration_norm"],
-                "printing_gap_norm": param_set["printing_gap_norm"],
-                "precursor_volume_norm": param_set["precursor_volume_norm"]
+        if existing_campaign:
+            campaign_id = existing_campaign["_id"]
+            update_data = {}
+            
+            if gpc_data:
+                update_data["gpc"] = gpc_data
+            if image_id:
+                update_data["image_id"] = image_id
+            
+            if update_data:
+                mongo.db.campaigns.update_one(
+                    {"_id": campaign_id},
+                    {"$set": update_data}
+                )
+
+            sets_to_insert = [{
+                "campaign_id": campaign_id,
+                "sample_no": p_set["sample_no"],
+                "motor_speed": p_set["motor_speed"],
+                "temperature": p_set["temperature"],
+                "concentration": p_set["concentration"],
+                "printing_gap": p_set["printing_gap"],
+                "precursor_volume": p_set["precursor_volume"],
+                "solvent": p_set["solvent"],
+                **{k: p_set[k] for k in p_set if k.endswith('_norm')}
+            } for p_set in parameter_sets]
+
+            sets_result = mongo.db.sets.insert_many(sets_to_insert)
+            msg = f"Added {len(sets_result.inserted_ids)} parameter sets to existing campaign '{campaign_name}'"
+            if image_id:
+                msg += " with updated polymer image"
+            return msg, True, "success", False
+
+        else:
+            campaign_doc = {
+                "campaign_name": campaign_name,
+                "polymer_name": polymer_name,
+                "smiles_string": smiles_string,
+                "mw": mw,
+                "pdi": pdi,
+                "created_at": datetime.now()
             }
-            sets_to_insert.append(set_doc)
-        
-        sets_result = mongo.db["sets"].insert_many(sets_to_insert)
-        
-        return (f"Successfully saved campaign information and {len(sets_result.inserted_ids)} parameter sets to MongoDB.", 
-                True, "success", False)
+            
+            if gpc_data:
+                campaign_doc["gpc"] = gpc_data
+            if image_id:
+                campaign_doc["image_id"] = image_id
+
+            campaign_result = mongo.db.campaigns.insert_one(campaign_doc)
+            campaign_id = campaign_result.inserted_id
+
+            sets_to_insert = [{
+                "campaign_id": campaign_id,
+                "sample_no": p_set["sample_no"],
+                "motor_speed": p_set["motor_speed"],
+                "temperature": p_set["temperature"],
+                "concentration": p_set["concentration"],
+                "printing_gap": p_set["printing_gap"],
+                "precursor_volume": p_set["precursor_volume"],
+                "solvent": p_set["solvent"],
+                **{k: p_set[k] for k in p_set if k.endswith('_norm')}
+            } for p_set in parameter_sets]
+
+            sets_result = mongo.db.sets.insert_many(sets_to_insert)
+            msg = f"Created new campaign '{campaign_name}' with {len(sets_result.inserted_ids)} parameter sets"
+            if image_id:
+                msg += " and polymer image"
+            return msg, True, "success", False
+
     except Exception as e:
-        print(f"Failed to save parameter sets to MongoDB: {e}")
+        print(f"Failed to save parameter sets: {str(e)}")
         return f"Failed to save parameter sets: {str(e)}", True, "danger", True
 
 
