@@ -3002,6 +3002,44 @@ def update_campaign_options(search_value):
         return []
 
 
+@app.callback(
+    Output("recipe-builder-sets", "children"),
+    Input("recipe-builder-campaign-dropdown", "value"),
+    prevent_initial_call=True
+)
+def display_campaign_sets(selected_campaign):
+    if not selected_campaign:
+        return html.Div("Select a campaign to view its parameter sets")
+    
+    try:
+        campaign = mongo.db.campaigns.find_one({"campaign_name": selected_campaign})
+        if not campaign:
+            return html.Div(f"Campaign '{selected_campaign}' not found")
+        
+        sets = list(mongo.db.sets.find({"campaign_id": campaign["_id"]}))
+        if not sets:
+            return html.Div(f"No parameter sets found for campaign '{selected_campaign}'")
+        
+        for s in sets:
+            s["_id"] = str(s["_id"])
+            s["campaign_id"] = str(s["campaign_id"])
+        
+        columns = [{"name": k.title().replace("_", " "), "id": k} 
+                 for k in sets[0].keys() if k not in ["_id", "campaign_id"]]
+        
+        return dash_table.DataTable(
+            id='campaign-sets-table',
+            columns=columns,
+            data=sets,
+            style_table={'overflowX': 'auto'},
+            page_size=10
+        )
+    
+    except Exception as e:
+        print(f"Error loading parameter sets: {e}")
+        return html.Div("Error loading parameter sets", style={'color': 'red'})
+
+
 if __name__ == "__main__":
     app.run(debug=True)
 

@@ -32,21 +32,12 @@ layout = html.Div(
                     ],
                     className="mb-3",
                 ),
-                dash.dash_table.DataTable(
-                    id='parameter-sets-table',
-                    columns=[
-                        {'name': 'Sample No', 'id': 'sample_no'},
-                        {'name': 'Motor Speed', 'id': 'motor_speed'},
-                        {'name': 'Temperature', 'id': 'temperature'},
-                        {'name': 'Concentration', 'id': 'concentration'},
-                        {'name': 'Printing Gap', 'id': 'printing_gap'},
-                        {'name': 'Precursor Volume', 'id': 'precursor_volume'},
-                        {'name': 'Solvent', 'id': 'solvent'}
+                html.Div(
+                    [
+                        html.H4("Parameter Sets for Selected Campaign"),
+                        html.Div(id="recipe-builder-sets")
                     ],
-                    page_size=10,
-                    style_table={'overflowX': 'auto'},
-                    row_selectable='multi',
-                    selected_rows=[]
+                    className="mb-3"
                 ),
                 html.Div(id="recipe-output", className="mb-3"),
                 dcc.Store(id='recipe-parameter-sets'),
