@@ -35,6 +35,7 @@ links = {
     "Real Time Telemetry": "/real-time-telemetry",
     # "Images": "/images",
     "Sampler": "/sampler",
+    "Recipe Builder": "/recipe-builder"
     # "Options": "/options",
 }
 

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional, Tuple, List
 
 from PIL import Image
-from ximea import xiapi
+# from ximea import xiapi
 
 from .device import Device, check_initialized
 

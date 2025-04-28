@@ -123,6 +123,7 @@ navbar = dbc.NavbarSimple(
         ),
         # dbc.NavItem(dbc.NavLink("Images", href="/images", external_link=True)),
         dbc.NavItem(dbc.NavLink("Sampler", href="/sampler", external_link=True)),
+        dbc.NavItem(dbc.NavLink("Recipe Builder", href="/recipe-builder", external_link=True)),
         # dbc.DropdownMenu(
         #     children=[
         #         # dbc.DropdownMenuItem(
