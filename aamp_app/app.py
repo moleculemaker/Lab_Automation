@@ -2977,6 +2977,31 @@ def save_parameter_sets_to_mongo(n_clicks, parameter_sets, gpc_data, campaign_na
         return f"Failed to save parameter sets: {str(e)}", True, "danger", True
 
 
+# ---------------------------------------------------------------
+# Recipe Builder page
+# ---------------------------------------------------------------
+
+
+@app.callback(
+    Output('recipe-builder-campaign-dropdown', 'options'),
+    Input('recipe-builder-campaign-dropdown', 'search_value')
+)
+def update_campaign_options(search_value):
+    try:
+        campaigns = list(mongo.db.campaigns.find({}, {"campaign_name": 1}))
+        campaign_options = [{"label": camp["campaign_name"], "value": camp["campaign_name"]} 
+                          for camp in campaigns]
+        if search_value:
+            campaign_options = [c for c in campaign_options 
+                              if search_value.lower() in c["label"].lower()]
+            
+        return campaign_options
+    
+    except Exception as e:
+        print(f"Error fetching campaigns: {e}")
+        return []
+
+
 if __name__ == "__main__":
     app.run(debug=True)
 

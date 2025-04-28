@@ -22,7 +22,7 @@ layout = html.Div(
                             [
                                 html.H5("Select Campaign"),
                                 dcc.Dropdown(
-                                    id="recipe-campaign-select",
+                                    id="recipe-builder-campaign-dropdown",
                                     options=[],
                                     placeholder="Select a campaign..."
                                 ),
