@@ -15,41 +15,41 @@ layout = html.Div(
             className="mb-3",
         ),
         html.Div(
-            [
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [
-                                html.H5("Select Campaign"),
-                                dcc.Dropdown(
-                                    id="recipe-builder-campaign-dropdown",
-                                    options=[],
-                                    placeholder="Select a campaign..."
-                                ),
-                            ],
-                            width=12,
-                        ),
-                    ],
-                    className="mb-3",
-                ),
-                html.Div(
-                    [
-                        html.H4("Parameter Sets for Selected Campaign"),
-                        html.Div(id="recipe-builder-sets")
-                    ],
-                    className="mb-3"
-                ),
-                html.Div(id="recipe-output", className="mb-3"),
-                dcc.Store(id='recipe-parameter-sets'),
-                dbc.Button(
-                    "Generate Selected Recipes",
-                    id="recipe-generate-button",
-                    color="primary",
-                    className="mb-3",
-                ),
-            ],
-            className="container",
-        ),
-    ],
-    className="container",
+        [
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            html.H5("Select Campaign"),
+                            dcc.Dropdown(
+                                id="recipe-builder-campaign-dropdown",
+                                options=[],
+                                placeholder="Select a campaign..."
+                            ),
+                        ],
+                        width=12,
+                    ),
+                ],
+                className="mb-3",
+            ),
+            html.Div(
+                [
+                    html.H4("Parameter Sets for Selected Campaign"),
+                    html.Div(id="recipe-builder-sets")
+                ],
+                className="mb-3"
+            ),
+            html.Div(id="recipe-builder-output", className="mb-3"),
+            dcc.Store(id='recipe-builder-parameter-sets'),
+            dbc.Button(
+                "Generate Selected Recipes",
+                id="recipe-builder-generate-button",
+                color="primary",
+                className="mb-3",
+            ),
+        ],
+        className="container",
+    )
+],
+className="container",
 )

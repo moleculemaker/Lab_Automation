@@ -29,6 +29,7 @@ import umap
 import plotly.express as px
 import plotly.graph_objects as go
 from scipy.stats import gaussian_kde
+from string import Template
 
 from db.validation import solutions, films, devices, recipes
 try:
@@ -3027,17 +3028,78 @@ def display_campaign_sets(selected_campaign):
         columns = [{"name": k.title().replace("_", " "), "id": k} 
                  for k in sets[0].keys() if k not in ["_id", "campaign_id"]]
         
+        selected_rows = list(range(len(sets)))
+        
         return dash_table.DataTable(
-            id='campaign-sets-table',
+            id='recipe-builder-sets-table',
             columns=columns,
             data=sets,
             style_table={'overflowX': 'auto'},
-            page_size=10
+            page_size=10,
+            row_selectable='multi',
+            selected_rows=selected_rows
         )
+
     
     except Exception as e:
         print(f"Error loading parameter sets: {e}")
         return html.Div("Error loading parameter sets", style={'color': 'red'})
+
+
+with open('../recipes/recipe_sample.py', 'r') as f:
+    RECIPE_TEMPLATE = Template(f.read())
+
+@app.callback(
+    Output("recipe-builder-output", "children"),
+    Input("recipe-builder-generate-button", "n_clicks"),
+    State("recipe-builder-sets-table", "selected_rows"),
+    State("recipe-builder-parameter-sets", "data"),
+    prevent_initial_call=True
+)
+def generate_recipes(n_clicks, selected_rows, parameter_sets):
+    if not parameter_sets or not selected_rows:
+        return html.Div("Please select parameter sets to generate recipes")
+    
+    generated_scripts = []
+    
+    for idx in selected_rows:
+        params = parameter_sets[idx]
+        
+        sub_dict = {
+            'sample_no': params['sample_no'],
+            'polymer': params.get('polymer_name', 'Unknown Polymer'),
+            'solvent': params['solvent'],
+            'concentration': params['concentration'],
+            'motor_speed': params['motor_speed'],
+            'temperature': params['temperature'],
+            'printing_gap': params['printing_gap'],
+            'precursor_volume': params['precursor_volume']
+        }
+        
+        try:
+            script = RECIPE_TEMPLATE.safe_substitute(sub_dict)
+            generated_scripts.append({
+                "sample_no": params["sample_no"],
+                "script": script
+            })
+        except Exception as e:
+            return html.Div(f"Error generating recipe: {str(e)}", style={'color': 'red'})
+    
+    return html.Div([
+        html.H4("Generated Recipes"),
+        html.Ul([
+            html.Li([
+                html.P(f"Sample {script['sample_no']}"),
+                dcc.Markdown(f'''``````'''),
+                html.A(
+                    "Download Script",
+                    href=f"data:text/plain;charset=utf-8,{script['script']}",
+                    download=f"recipe_sample_{script['sample_no']}.py",
+                    className="btn btn-primary mt-2"
+                )
+            ]) for script in generated_scripts
+        ])
+    ])
 
 
 if __name__ == "__main__":
