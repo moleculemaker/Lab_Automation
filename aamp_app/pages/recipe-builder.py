@@ -27,7 +27,45 @@ layout = html.Div(
                                 placeholder="Select a campaign..."
                             ),
                         ],
-                        width=12,
+                        width=8,
+                    ),
+                    dbc.Col(
+                        [
+                            html.H5("Enter Solution Position"),
+                            dcc.Input(
+                                id="recipe-builder-solution-position",
+                                type="text",
+                                placeholder="A1-D5"
+                            ),
+                        ],
+                        width=4,
+                    ),
+                ],
+                className="mb-3",
+            ),
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            dbc.Button(
+                                "Generate Selected Recipes",
+                                id="recipe-builder-generate-button",
+                                color="primary",
+                                className="mb-3",
+                            ),
+                        ],
+                        width=4,
+                    ),
+                    dbc.Col(
+                        [
+                            dbc.Button(
+                                "Run 0 recipes",
+                                id="recipe-builder-run-button",
+                                n_clicks=0,
+                                className="btn btn-success mt-2"
+                            ),
+                        ],
+                        width=4,
                     ),
                 ],
                 className="mb-3",
@@ -40,13 +78,8 @@ layout = html.Div(
                 className="mb-3"
             ),
             html.Div(id="recipe-builder-output", className="mb-3"),
+            dcc.Store(id='recipe-builder-polymer-name'),
             dcc.Store(id='recipe-builder-parameter-sets'),
-            dbc.Button(
-                "Generate Selected Recipes",
-                id="recipe-builder-generate-button",
-                color="primary",
-                className="mb-3",
-            ),
         ],
         className="container",
     )

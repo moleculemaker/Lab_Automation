@@ -3002,9 +3002,21 @@ def update_campaign_options(search_value):
         print(f"Error fetching campaigns: {e}")
         return []
 
+@app.callback(
+    Output("recipe-builder-run-button", "children"),
+    Input("recipe-builder-output", "children"),
+    State("recipe-builder-parameter-sets", "data"),
+    prevent_initial_call=True
+)
+def update_run_button_label(_, parameter_sets):
+    num_recipes = len(parameter_sets) if parameter_sets else 0
+    return f"Run {num_recipes} recipe{'s' if num_recipes != 1 else ''}"
+
 
 @app.callback(
     Output("recipe-builder-sets", "children"),
+    Output("recipe-builder-parameter-sets", "data"),
+    Output("recipe-builder-polymer-name", "data"),
     Input("recipe-builder-campaign-dropdown", "value"),
     prevent_initial_call=True
 )
@@ -3016,7 +3028,7 @@ def display_campaign_sets(selected_campaign):
         campaign = mongo.db.campaigns.find_one({"campaign_name": selected_campaign})
         if not campaign:
             return html.Div(f"Campaign '{selected_campaign}' not found")
-        
+        polymer_name = campaign.get('polymer_name')
         sets = list(mongo.db.sets.find({"campaign_id": campaign["_id"]}))
         if not sets:
             return html.Div(f"No parameter sets found for campaign '{selected_campaign}'")
@@ -3029,8 +3041,8 @@ def display_campaign_sets(selected_campaign):
                  for k in sets[0].keys() if k not in ["_id", "campaign_id"]]
         
         selected_rows = list(range(len(sets)))
-        
-        return dash_table.DataTable(
+
+        table = dash_table.DataTable(
             id='recipe-builder-sets-table',
             columns=columns,
             data=sets,
@@ -3040,6 +3052,7 @@ def display_campaign_sets(selected_campaign):
             selected_rows=selected_rows
         )
 
+        return table, sets, polymer_name
     
     except Exception as e:
         print(f"Error loading parameter sets: {e}")
@@ -3054,20 +3067,21 @@ with open('../recipes/recipe_sample.py', 'r') as f:
     Input("recipe-builder-generate-button", "n_clicks"),
     State("recipe-builder-sets-table", "selected_rows"),
     State("recipe-builder-parameter-sets", "data"),
+    State("recipe-builder-polymer-name", "data"),
     prevent_initial_call=True
 )
-def generate_recipes(n_clicks, selected_rows, parameter_sets):
+def generate_recipes(n_clicks, selected_rows, parameter_sets, polymer_name):
     if not parameter_sets or not selected_rows:
         return html.Div("Please select parameter sets to generate recipes")
     
     generated_scripts = []
-    
+
     for idx in selected_rows:
         params = parameter_sets[idx]
         
         sub_dict = {
             'sample_no': params['sample_no'],
-            'polymer': params.get('polymer_name', 'Unknown Polymer'),
+            'polymer': polymer_name,
             'solvent': params['solvent'],
             'concentration': params['concentration'],
             'motor_speed': params['motor_speed'],
@@ -3085,18 +3099,24 @@ def generate_recipes(n_clicks, selected_rows, parameter_sets):
         except Exception as e:
             return html.Div(f"Error generating recipe: {str(e)}", style={'color': 'red'})
     
+    print(script)
     return html.Div([
         html.H4("Generated Recipes"),
         html.Ul([
             html.Li([
                 html.P(f"Sample {script['sample_no']}"),
-                dcc.Markdown(f'''``````'''),
-                html.A(
-                    "Download Script",
-                    href=f"data:text/plain;charset=utf-8,{script['script']}",
-                    download=f"recipe_sample_{script['sample_no']}.py",
-                    className="btn btn-primary mt-2"
-                )
+                html.Div([
+                    html.Pre(
+                        script['script'],
+                        style={
+                            'height': '400px',
+                            'overflowY': 'auto',
+                            'backgroundColor': '#f8f9fa',
+                            'padding': '10px',
+                            'border': '1px solid #dee2e6'
+                        }
+                    ),
+                ])
             ]) for script in generated_scripts
         ])
     ])
