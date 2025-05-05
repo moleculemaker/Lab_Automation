@@ -80,6 +80,7 @@ layout = html.Div(
             html.Div(id="recipe-builder-output", className="mb-3"),
             dcc.Store(id='recipe-builder-polymer-name'),
             dcc.Store(id='recipe-builder-parameter-sets'),
+            dcc.Store(id="recipe-builder-generated-scripts"),
         ],
         className="container",
     )

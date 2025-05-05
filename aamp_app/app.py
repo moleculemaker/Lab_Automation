@@ -3064,13 +3064,15 @@ with open('../recipes/recipe_sample.py', 'r') as f:
 
 @app.callback(
     Output("recipe-builder-output", "children"),
+    Output("recipe-builder-generated-scripts", "data"),
     Input("recipe-builder-generate-button", "n_clicks"),
     State("recipe-builder-sets-table", "selected_rows"),
     State("recipe-builder-parameter-sets", "data"),
     State("recipe-builder-polymer-name", "data"),
+    State("recipe-builder-solution-position", "value"),
     prevent_initial_call=True
 )
-def generate_recipes(n_clicks, selected_rows, parameter_sets, polymer_name):
+def generate_recipes(n_clicks, selected_rows, parameter_sets, polymer_name, solution_position):
     if not parameter_sets or not selected_rows:
         return html.Div("Please select parameter sets to generate recipes")
     
@@ -3087,7 +3089,8 @@ def generate_recipes(n_clicks, selected_rows, parameter_sets, polymer_name):
             'motor_speed': params['motor_speed'],
             'temperature': params['temperature'],
             'printing_gap': params['printing_gap'],
-            'precursor_volume': params['precursor_volume']
+            'precursor_volume': params['precursor_volume'],
+            'solution_position': solution_position
         }
         
         try:
@@ -3119,7 +3122,62 @@ def generate_recipes(n_clicks, selected_rows, parameter_sets, polymer_name):
                 ])
             ]) for script in generated_scripts
         ])
-    ])
+    ]), generated_scripts
+
+
+@app.callback(
+    Output("recipe-builder-run-log", "children"),
+    Input("recipe-builder-run-button", "n_clicks"),
+    State("recipe-builder-generated-scripts", "data"),
+    prevent_initial_call=True
+)
+def run_recipes_sequentially(n_clicks, generated_scripts):
+    if not generated_scripts:
+        raise PreventUpdate
+    
+    log_components = []
+    interceptor = ConsoleInterceptor()
+    
+    try:
+        for script in generated_scripts:
+            code = script['script']
+            log_components.append(html.H5(f"Running Sample {script['sample_no']}"))
+            
+            interceptor.start_interception()
+            try:
+                exec(code)
+                status = "Success"
+                alert_color = "success"
+            except Exception as e:
+                status = f"Error: {str(e)}"
+                alert_color = "danger"
+            finally:
+                interceptor.stop_interception()
+                
+            output = interceptor.get_intercepted_messages()
+            
+            log_components.extend([
+                dbc.Alert(status, color=alert_color),
+                html.Pre(
+                    f"Output:\n{output}",
+                    style={
+                        'backgroundColor': '#f8f9fa',
+                        'padding': '10px',
+                        'border': '1px solid #dee2e6',
+                        'maxHeight': '300px',
+                        'overflowY': 'auto'
+                    }
+                ),
+                html.Hr()
+            ])
+            
+        return log_components
+    
+    except Exception as e:
+        return html.Div(f"Critical error: {str(e)}", style={'color': 'red'})
+    
+    finally:
+        del interceptor
 
 
 if __name__ == "__main__":
