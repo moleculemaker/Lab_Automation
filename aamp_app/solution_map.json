@@ -1,0 +1,122 @@
+{
+    "A1": {
+        "polymer": "P3MEEMT",
+        "solvent": "CB",
+        "concentration": 40,
+        "status": "occupied"
+    },
+    "A2": {
+        "polymer": "P3MEEMT",
+        "solvent": "CB",
+        "concentration": 30,
+        "status": "occupied"
+    },
+    "A3": {
+        "polymer": "P3MEEMT",
+        "solvent": "CB",
+        "concentration": 20,
+        "status": "occupied"
+    },
+    "A4": {
+        "polymer": "P3MEEMT",
+        "solvent": "CB",
+        "concentration": 10,
+        "status": "occupied"
+    },
+    "A5": {
+        "polymer": null,
+        "solvent": null,
+        "concentration": null,
+        "status": "empty"
+    },
+    "B1": {
+        "polymer": "P3MEEMT",
+        "solvent": "CB",
+        "concentration": 15,
+        "status": "occupied"
+    },
+    "B2": {
+        "polymer": null,
+        "solvent": null,
+        "concentration": null,
+        "status": "empty"
+    },
+    "B3": {
+        "polymer": null,
+        "solvent": null,
+        "concentration": null,
+        "status": "empty"
+    },
+    "B4": {
+        "polymer": null,
+        "solvent": null,
+        "concentration": null,
+        "status": "empty"
+    },
+    "B5": {
+        "polymer": null,
+        "solvent": null,
+        "concentration": null,
+        "status": "empty"
+    },
+    "C1": {
+        "polymer": null,
+        "solvent": null,
+        "concentration": null,
+        "status": "empty"
+    },
+    "C2": {
+        "polymer": null,
+        "solvent": null,
+        "concentration": null,
+        "status": "empty"
+    },
+    "C3": {
+        "polymer": null,
+        "solvent": null,
+        "concentration": null,
+        "status": "empty"
+    },
+    "C4": {
+        "polymer": null,
+        "solvent": null,
+        "concentration": null,
+        "status": "empty"
+    },
+    "C5": {
+        "polymer": null,
+        "solvent": null,
+        "concentration": null,
+        "status": "empty"
+    },
+    "D1": {
+        "polymer": null,
+        "solvent": null,
+        "concentration": null,
+        "status": "empty"
+    },
+    "D2": {
+        "polymer": null,
+        "solvent": null,
+        "concentration": null,
+        "status": "empty"
+    },
+    "D3": {
+        "polymer": null,
+        "solvent": null,
+        "concentration": null,
+        "status": "empty"
+    },
+    "D4": {
+        "polymer": null,
+        "solvent": null,
+        "concentration": null,
+        "status": "empty"
+    },
+    "D5": {
+        "polymer": null,
+        "solvent": null,
+        "concentration": null,
+        "status": "empty"
+    }
+}

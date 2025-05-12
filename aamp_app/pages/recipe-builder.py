@@ -54,7 +54,7 @@ layout = html.Div(
                                 className="mb-3",
                             ),
                         ],
-                        width=4,
+                        width=3,
                     ),
                     dbc.Col(
                         [
@@ -65,7 +65,7 @@ layout = html.Div(
                                 className="btn btn-success mt-2"
                             ),
                         ],
-                        width=4,
+                        width=2,
                     ),
                 ],
                 className="mb-3",

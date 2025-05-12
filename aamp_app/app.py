@@ -9,6 +9,7 @@ import dash
 from dash import dcc
 from dash import html
 from dash import dash_table
+from dash import ctx
 import dash_ag_grid as dag
 from dash.dependencies import Input, Output, State, MATCH, ALL
 import dash_bootstrap_components as dbc
@@ -125,6 +126,7 @@ navbar = dbc.NavbarSimple(
         # dbc.NavItem(dbc.NavLink("Images", href="/images", external_link=True)),
         dbc.NavItem(dbc.NavLink("Sampler", href="/sampler", external_link=True)),
         dbc.NavItem(dbc.NavLink("Recipe Builder", href="/recipe-builder", external_link=True)),
+        dbc.NavItem(dbc.NavLink("Solution Map", href="/solution-map", external_link=True)),
         # dbc.DropdownMenu(
         #     children=[
         #         # dbc.DropdownMenuItem(
@@ -3063,6 +3065,55 @@ with open('../recipes/recipe_sample.py', 'r') as f:
     RECIPE_TEMPLATE = Template(f.read())
 
 @app.callback(
+    Output("recipe-builder-solution-position", "value"),
+    Output("recipe-alert", "children"),
+    Output("recipe-alert", "is_open"),
+    Input("recipe-builder-parameter-sets", "data"),
+    Input("recipe-builder-sets-table", "selected_rows"),
+    State("recipe-builder-polymer-name", "data"),
+    prevent_initial_call=True
+)
+def auto_find_solution_positions(parameter_sets, selected_rows, polymer_name):
+    if not parameter_sets or not selected_rows:
+        return dash.no_update, dash.no_update, dash.no_update
+    
+    try:
+        solution_map = mongo.db.solution_map.find_one({})
+        if not solution_map:
+            raise Exception("No solution map found in database")
+        
+        solution_map.pop('_id', None)
+        
+        positions = []
+        for idx in selected_rows:
+            params = parameter_sets[idx]
+            
+            best_match = None
+            closest_diff = float('inf')
+            
+            for cell_id, cell in solution_map.items():
+                if (cell['status'] == 'occupied' and
+                    cell['polymer'] == polymer_name and
+                    cell['solvent'] == params['solvent']):
+                    
+                    current_diff = abs(cell['concentration'] - params['concentration'])
+                    if current_diff < closest_diff:
+                        closest_diff = current_diff
+                        best_match = cell_id
+            
+            if best_match:
+                positions.append(best_match)
+            else:
+                positions.append("A1")
+                # return "", f"No solution found for {polymer_name}/{params['solvent']}/{params['concentration']}%", True
+        
+        return ", ".join(positions), "Auto-filled solution positions", True
+    
+    except Exception as e:
+        return "", f"Error finding solution positions: {str(e)}", True
+
+
+@app.callback(
     Output("recipe-builder-output", "children"),
     Output("recipe-builder-generated-scripts", "data"),
     Input("recipe-builder-generate-button", "n_clicks"),
@@ -3072,13 +3123,11 @@ with open('../recipes/recipe_sample.py', 'r') as f:
     State("recipe-builder-solution-position", "value"),
     prevent_initial_call=True
 )
-def generate_recipes(n_clicks, selected_rows, parameter_sets, polymer_name, solution_position):
-    if not parameter_sets or not selected_rows:
-        return html.Div("Please select parameter sets to generate recipes")
+def generate_recipes(n_clicks, selected_rows, parameter_sets, polymer_name, solution_positions):
+    positions = [pos.strip() for pos in solution_positions.split(",")] if solution_positions else []
     
     generated_scripts = []
-
-    for idx in selected_rows:
+    for idx, pos in zip(selected_rows, positions):
         params = parameter_sets[idx]
         
         sub_dict = {
@@ -3090,7 +3139,7 @@ def generate_recipes(n_clicks, selected_rows, parameter_sets, polymer_name, solu
             'temperature': params['temperature'],
             'printing_gap': params['printing_gap'],
             'precursor_volume': params['precursor_volume'],
-            'solution_position': solution_position
+            'solution_position': pos
         }
         
         try:
@@ -3102,7 +3151,6 @@ def generate_recipes(n_clicks, selected_rows, parameter_sets, polymer_name, solu
         except Exception as e:
             return html.Div(f"Error generating recipe: {str(e)}", style={'color': 'red'})
     
-    print(script)
     return html.Div([
         html.H4("Generated Recipes"),
         html.Ul([
@@ -3178,6 +3226,39 @@ def run_recipes_sequentially(n_clicks, generated_scripts):
     
     finally:
         del interceptor
+
+
+# ---------------------------------------------------
+# Solution Map Page
+# ---------------------------------------------------
+
+
+@app.callback(
+    Output("solution-map-json", "value"),
+    Input("solution-map-json", "id"),
+)
+def load_solution_map(_):
+    doc = mongo.db.solution_map.find_one({})
+    if doc:
+        doc.pop("_id", None)
+        return json.dumps(doc, indent=2)
+    else:
+        return "{}"
+
+@app.callback(
+    Output("solution-map-alert", "children"),
+    Output("solution-map-alert", "is_open"),
+    Input("solution-map-save", "n_clicks"),
+    State("solution-map-json", "value"),
+    prevent_initial_call=True,
+)
+def save_solution_map(n_clicks, json_text):
+    try:
+        data = json.loads(json_text)
+        mongo.db.solution_map.replace_one({}, data, upsert=True)
+        return "Solution map saved!", True
+    except Exception as e:
+        return f"Error: {e}", True
 
 
 if __name__ == "__main__":
