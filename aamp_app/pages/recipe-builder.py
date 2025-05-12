@@ -6,7 +6,28 @@ dash.register_page(__name__, path="/recipe-builder", name="Recipe Builder", titl
 
 layout = html.Div(
     [
-        html.H1("Recipe Builder"),
+        html.Div([
+            html.H1([
+                "Recipe Builder",
+                html.Span(
+                    " ?",
+                    id="recipe-builder-help",
+                    style={
+                        "cursor": "pointer",
+                        "color": "gray",
+                        "fontWeight": "bold",
+                        "fontSize": "0.7em",
+                        "marginLeft": "10px"
+                    }
+                ),
+            ], style={"display": "inline-block"}),
+            dbc.Tooltip(
+                "This page uses parameter sets generated in the sampler to create recipe templates to run on the devices. Selecting a campaign brings up all the parameter sets associated with it, and uses the solution map to determine each set's corresponding solution position. Generating recipes uses string template matching to fill in the templates with the set information and lets the user preview the results. You can also run all of the recipes sequentially.",
+                target="recipe-builder-help",
+                placement="right",
+                style={"maxWidth": "350px"}
+            ),
+        ]),
         dbc.Alert(
             id="recipe-alert",
             color="success",

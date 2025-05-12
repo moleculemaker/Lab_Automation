@@ -80,7 +80,28 @@ layout = html.Div(
                 html.Option(value="2.5")
             ]
         ),
-        html.H1("Sampler"),
+        html.Div([
+            html.H1([
+                "Sampler",
+                html.Span(
+                    " ?",
+                    id="sampler-help",
+                    style={
+                        "cursor": "pointer",
+                        "color": "gray",
+                        "fontWeight": "bold",
+                        "fontSize": "0.7em",
+                        "marginLeft": "10px"
+                    }
+                ),
+            ], style={"display": "inline-block"}),
+            dbc.Tooltip(
+                "This page allows the user to generate starting parameter sets for a campaign, covering as much as the parameter space as possible so the optimizer can narrow down on particular runs that where successful. You can enter campaign-specific information, and discrete or continuous parameter values for the sampler to explore, and it will generate PCA and uMAP visualizations, the generated parameter values, and their min-max normalized value for the optimizer. This data can then be saved to the database and used in other pages of the app, namely the recipe builder, to start a campaign.",
+                target="sampler-help",
+                placement="right",
+                style={"maxWidth": "350px"}
+            ),
+        ]),
         dbc.Alert(
             id="sampler-alert",
             color="success",
