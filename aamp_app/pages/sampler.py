@@ -274,8 +274,8 @@ layout = html.Div(
                                 ),
                                 dbc.Col(
                                     dbc.InputGroup([
-                                        dbc.Input(id="custom-concentration-input", type="number", placeholder="Custom concentration"),
-                                        dbc.Button("Add", id="add-custom-concentration", size="sm"),
+                                        dbc.Input(id={"type": "custom-input", "id": "concentration"}, type="number", placeholder="Custom concentration"),
+                                        dbc.Button("Add", id={"type": "add-custom-button", "id": "concentration"}, size="sm"),
                                     ]),
                                     width=4,
                                 )

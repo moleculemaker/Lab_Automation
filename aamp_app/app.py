@@ -3081,36 +3081,32 @@ def auto_find_solution_positions(parameter_sets, selected_rows, polymer_name):
         solution_map = mongo.db.solution_map.find_one({})
         if not solution_map:
             raise Exception("No solution map found in database")
-        
         solution_map.pop('_id', None)
         
         positions = []
         for idx in selected_rows:
             params = parameter_sets[idx]
-            
-            best_match = None
-            closest_diff = float('inf')
+            found = False
             
             for cell_id, cell in solution_map.items():
                 if (cell['status'] == 'occupied' and
                     cell['polymer'] == polymer_name and
-                    cell['solvent'] == params['solvent']):
+                    cell['solvent'] == params['solvent'] and
+                    cell['concentration'] == params['concentration']):
                     
-                    current_diff = abs(cell['concentration'] - params['concentration'])
-                    if current_diff < closest_diff:
-                        closest_diff = current_diff
-                        best_match = cell_id
+                    positions.append(cell_id)
+                    found = True
+                    break
             
-            if best_match:
-                positions.append(best_match)
-            else:
-                positions.append("A1")
-                # return "", f"No solution found for {polymer_name}/{params['solvent']}/{params['concentration']}%", True
+            if not found:
+                err_msg = (f"No exact match found for {polymer_name}/"
+                          f"{params['solvent']}/{params['concentration']}%")
+                return "", err_msg, True
         
-        return ", ".join(positions), "Auto-filled solution positions", True
+        return ", ".join(positions), "Exact solution positions found", True
     
     except Exception as e:
-        return "", f"Error finding solution positions: {str(e)}", True
+        return "", f"Error: {str(e)}", True
 
 
 @app.callback(
