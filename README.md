@@ -111,6 +111,64 @@ Example 6 emulates optimization of a material processing experiment. It uses a f
 
 You will need some more packages to run example 6 (listed above). Run example 6 as stated above from root.
 
+## Dash UI
+The entire functionality of the app can also be accessed through a user-friendly Dash app interface. This includes creating recipes, running them, granulated manual control, and new features involved in automated process optimization, such as parameter set sampling, the recipe builder, and the solution mapper.
+
+### UI Setup Instructions
+
+1. Clone this repository.
+```
+git clone https://github.com/moleculemaker/Lab_Automation
+```
+2. Enter the Lab Automation folder.
+```
+cd Lab_Automation
+```
+3. Check out the dash-ui branch.
+```
+git checkout dash-ui
+```
+4. Create a virtual environment.
+```
+python3 -m venv venv
+```
+5. Activate the virtual environment.
+
+Mac:
+```
+source venv/bin/activate
+```
+Windows:
+```
+venv\Scripts\activate
+```
+6. Install the requirements.
+```
+pip install -r requirements.txt
+```
+7. Add a .env file to the aamp_app folder and aamp_app/db/validation containing your MongoDB credentials. The files should be in the following format:
+```
+MONGO_URI=mongodb+srv://<username>:<connection-string>
+MONGO_DB_NAME=diaogroup
+```
+8. Enter the aamp_app folder.
+```
+cd aamp_app
+```
+9. When running the app for the first time with an empty database, the correct collections with validation schemas need to be created. Uncomment the following lines in app.py:
+```
+# solutions.init_collection()
+# devices.init_collection()
+# films.init_collection()
+# recipes.init_collection()
+```
+They can be commented again once the collections are created in the database.
+
+10. Run the app
+```
+python -m app
+```
+
 ## Further Details
 ### Creating Device Modules
 Please see the devices folder for examples of implementing device modules
