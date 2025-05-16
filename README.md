@@ -168,7 +168,20 @@ They can be commented again once the collections are created in the database.
 ```
 python -m app
 ```
+### Next steps
 
+There are a number of pending tasks required for the Dash UI and automated optimization workflow to be fully operational:
+- Send experimental results to the Bayesian optimizer
+- Receive parameters from the optimizer in the recipe builder, either through database triggers or directly in the app
+- Validate custom inputs in the sampler
+- Add different sampling methods to the sampler (currently uses simple random sampling)
+- Validate the solution map JSON
+- Add a way to update or include more recipe templates
+- Get the Ximea Camera module working on Mac and Linux devices
+- Test running recipes sequentially in the recipe builder
+- Visualize parameter space exploration over the course of a campaign
+- Visualize optimal parameter ranges over the course of a campaign
+- Track campaign progress in the UI, along with logging and error tracking
 ## Further Details
 ### Creating Device Modules
 Please see the devices folder for examples of implementing device modules
