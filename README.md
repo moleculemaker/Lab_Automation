@@ -10,12 +10,16 @@ Lab Automation is a modular framework for automating multiple devices or instrum
 4. [Usage](#usage)
     - [Automation](#automation)
     - [Optimization](#autonomous-process-optimization)
-5. [Further Details](#further-details)
+5. [Dash UI](#dash-ui)
+    - [UI Setup Instructions](#ui-setup-instructions)
+    - [Adding Recipes for the Recipe Builder](#adding-recipes-for-the-recipe-builder)
+    - [Next Steps](#next-steps)
+6. [Further Details](#further-details)
     - [Creating Device Modules](#creating-device-modules)
     - [Creating Command Modules](#creating-command-modules)
         - [Composite Commands](#composite-commands)
     - [Program Scheme](#program-scheme)
-6. [License](#license)
+7. [License](#license)
 
 ## Description
 Lab Automation was developed for the purpose of automating laboratory experiments to enable high-throughput data collection and process optimization. It can be used to automate experimental procedures that involve instruments from different vendors, with different communication protocols, and also home-built equipment. The automated procedures can then be tied into sequential model-based optimization algorithms (e.g. Bayesian optimization) to enable self-driving, autonomous lab experiments.
@@ -168,13 +172,24 @@ They can be commented again once the collections are created in the database.
 ```
 python -m app
 ```
-### Next steps
+
+### Adding Recipes for the Recipe Builder
+Right now the recipe builder is formatted to work with one recipe template, and that is recipe_sample.py. A keyword search for this in the app.py file will reveal the place where it is being read in and saved as a constant string literal. To add a new recipe:
+1. Include it as a Python file in the recipes directory.
+2. Replace all literals for template variables where appropriate (concentration, printing gap, arm position, etc.). You can refer to recipe_sample.py for an example implementation of this. Adding additional template variables requires modification of the generate_recipes callback in app.py.
+3. Change the filename being read into app.py from recipe_sample.py to your new recipe's filename.
+4. Ensure that the generate_recipes callback runs without error with the new recipe.
+5. By default, all recipes are ignored. If you want git to track the new recipe, add !\<your-recipe>.py to the .gitignore file in the recipes folder.
+
+### Next Steps
 
 There are a number of pending tasks required for the Dash UI and automated optimization workflow to be fully operational:
 - Send experimental results to the Bayesian optimizer
 - Receive parameters from the optimizer in the recipe builder, either through database triggers or directly in the app
 - Validate custom inputs in the sampler
 - Add different sampling methods to the sampler (currently uses simple random sampling)
+- Allow a campaign to have more than one polymer
+- Attach polymer information to each parameter set rather than to campaign metadata
 - Validate the solution map JSON
 - Add a way to update or include more recipe templates
 - Get the Ximea Camera module working on Mac and Linux devices
@@ -182,6 +197,8 @@ There are a number of pending tasks required for the Dash UI and automated optim
 - Visualize parameter space exploration over the course of a campaign
 - Visualize optimal parameter ranges over the course of a campaign
 - Track campaign progress in the UI, along with logging and error tracking
+- Merge the dash-ui branch to master once a full campaign can be run through the UI (and most of the above objectives are complete)
+
 ## Further Details
 ### Creating Device Modules
 Please see the devices folder for examples of implementing device modules
