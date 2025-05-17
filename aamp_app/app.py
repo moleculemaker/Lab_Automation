@@ -2905,7 +2905,18 @@ def save_parameter_sets_to_mongo(n_clicks, parameter_sets, gpc_data, campaign_na
             image_id = fs.put(decoded, filename=image_filename)
 
         existing_campaign = mongo.db.campaigns.find_one({"campaign_name": campaign_name})
+        pipeline = [
+            {"$group": {"_id": None, "max_value": {"$max": "$batch_no"}}}
+        ]
         
+        try:
+            result = list(mongo.db.sets.aggregate(pipeline))
+            max_value = result[0]["max_value"] if result else None
+        except (IndexError, KeyError):
+            max_value = None
+        
+        batch_no = max_value + 1 if max_value is not None else 1
+
         if existing_campaign:
             campaign_id = existing_campaign["_id"]
             update_data = {}
@@ -2923,6 +2934,8 @@ def save_parameter_sets_to_mongo(n_clicks, parameter_sets, gpc_data, campaign_na
 
             sets_to_insert = [{
                 "campaign_id": campaign_id,
+                "polymer_name": polymer_name,
+                "batch_no": batch_no,
                 "sample_no": p_set["sample_no"],
                 "motor_speed": p_set["motor_speed"],
                 "temperature": p_set["temperature"],
@@ -2942,7 +2955,6 @@ def save_parameter_sets_to_mongo(n_clicks, parameter_sets, gpc_data, campaign_na
         else:
             campaign_doc = {
                 "campaign_name": campaign_name,
-                "polymer_name": polymer_name,
                 "smiles_string": smiles_string,
                 "mw": mw,
                 "pdi": pdi,
@@ -2959,6 +2971,8 @@ def save_parameter_sets_to_mongo(n_clicks, parameter_sets, gpc_data, campaign_na
 
             sets_to_insert = [{
                 "campaign_id": campaign_id,
+                "polymer_name": polymer_name,
+                "batch_no": batch_no,
                 "sample_no": p_set["sample_no"],
                 "motor_speed": p_set["motor_speed"],
                 "temperature": p_set["temperature"],
@@ -3018,7 +3032,6 @@ def update_run_button_label(_, parameter_sets):
 @app.callback(
     Output("recipe-builder-sets", "children"),
     Output("recipe-builder-parameter-sets", "data"),
-    Output("recipe-builder-polymer-name", "data"),
     Input("recipe-builder-campaign-dropdown", "value"),
     prevent_initial_call=True
 )
@@ -3030,8 +3043,8 @@ def display_campaign_sets(selected_campaign):
         campaign = mongo.db.campaigns.find_one({"campaign_name": selected_campaign})
         if not campaign:
             return html.Div(f"Campaign '{selected_campaign}' not found")
-        polymer_name = campaign.get('polymer_name')
         sets = list(mongo.db.sets.find({"campaign_id": campaign["_id"]}))
+
         if not sets:
             return html.Div(f"No parameter sets found for campaign '{selected_campaign}'")
         
@@ -3054,7 +3067,7 @@ def display_campaign_sets(selected_campaign):
             selected_rows=selected_rows
         )
 
-        return table, sets, polymer_name
+        return table, sets
     
     except Exception as e:
         print(f"Error loading parameter sets: {e}")
@@ -3070,43 +3083,39 @@ with open('../recipes/recipe_sample.py', 'r') as f:
     Output("recipe-alert", "is_open"),
     Input("recipe-builder-parameter-sets", "data"),
     Input("recipe-builder-sets-table", "selected_rows"),
-    State("recipe-builder-polymer-name", "data"),
     prevent_initial_call=True
 )
-def auto_find_solution_positions(parameter_sets, selected_rows, polymer_name):
+def auto_find_solution_positions(parameter_sets, selected_rows):
     if not parameter_sets or not selected_rows:
         return dash.no_update, dash.no_update, dash.no_update
     
-    try:
-        solution_map = mongo.db.solution_map.find_one({})
-        if not solution_map:
-            raise Exception("No solution map found in database")
-        solution_map.pop('_id', None)
-        
-        positions = []
-        for idx in selected_rows:
-            params = parameter_sets[idx]
-            found = False
-            
-            for cell_id, cell in solution_map.items():
-                if (cell['status'] == 'occupied' and
-                    cell['polymer'] == polymer_name and
-                    cell['solvent'] == params['solvent'] and
-                    cell['concentration'] == params['concentration']):
-                    
-                    positions.append(cell_id)
-                    found = True
-                    break
-            
-            if not found:
-                err_msg = (f"No exact match found for {polymer_name}/"
-                          f"{params['solvent']}/{params['concentration']}%")
-                return "", err_msg, True
-        
-        return ", ".join(positions), "Exact solution positions found", True
+    solution_map = mongo.db.solution_map.find_one({})
+    if not solution_map:
+        raise Exception("No solution map found in database")
+    solution_map.pop('_id', None)
     
-    except Exception as e:
-        return "", f"Error: {str(e)}", True
+    positions = []
+    for idx in selected_rows:
+        params = parameter_sets[idx]
+        found = False
+        
+        for cell_id, cell in solution_map.items():
+            if (cell['status'] == 'occupied' and
+                cell['polymer'] == params['polymer_name'] and
+                cell['solvent'] == params['solvent'] and
+                cell['concentration'] == params['concentration']):
+                
+                positions.append(cell_id)
+                found = True
+                break
+        
+        if not found:
+            err_msg = (
+                f"No exact match found for {params['polymer_name']}/{params['solvent']}/{params['concentration']}%"
+            )
+            return "", err_msg, True
+    
+    return ", ".join(positions), "Exact solution positions found", True
 
 
 @app.callback(
@@ -3115,11 +3124,10 @@ def auto_find_solution_positions(parameter_sets, selected_rows, polymer_name):
     Input("recipe-builder-generate-button", "n_clicks"),
     State("recipe-builder-sets-table", "selected_rows"),
     State("recipe-builder-parameter-sets", "data"),
-    State("recipe-builder-polymer-name", "data"),
     State("recipe-builder-solution-position", "value"),
     prevent_initial_call=True
 )
-def generate_recipes(n_clicks, selected_rows, parameter_sets, polymer_name, solution_positions):
+def generate_recipes(n_clicks, selected_rows, parameter_sets, solution_positions):
     positions = [pos.strip() for pos in solution_positions.split(",")] if solution_positions else []
     
     generated_scripts = []
@@ -3128,7 +3136,7 @@ def generate_recipes(n_clicks, selected_rows, parameter_sets, polymer_name, solu
         
         sub_dict = {
             'sample_no': params['sample_no'],
-            'polymer': polymer_name,
+            'polymer': params['polymer_name'],
             'solvent': params['solvent'],
             'concentration': params['concentration'],
             'motor_speed': params['motor_speed'],
