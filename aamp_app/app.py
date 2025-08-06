@@ -127,6 +127,7 @@ navbar = dbc.NavbarSimple(
         dbc.NavItem(dbc.NavLink("Sampler", href="/sampler", external_link=True)),
         dbc.NavItem(dbc.NavLink("Recipe Builder", href="/recipe-builder", external_link=True)),
         dbc.NavItem(dbc.NavLink("Solution Map", href="/solution-map", external_link=True)),
+        dbc.NavItem(dbc.NavLink("Optimization", href="/bayesian-optimization", external_link=True)),
         # dbc.DropdownMenu(
         #     children=[
         #         # dbc.DropdownMenuItem(
@@ -2890,10 +2891,15 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smiles_string
     State("sampler-pdi", "value"),
     State("sampler-polymer-image", "contents"),
     State("sampler-polymer-image", "filename"),
+    State({"type": "sampler-dropdown", "id": "concentration"}, "value"),
+    State({"type": "sampler-dropdown", "id": "printing-gap"}, "value"),
+    State({"type": "sampler-dropdown", "id": "precursor-volume"}, "value"),
+    State({"type": "sampler-dropdown", "id": "motor-speed"}, "value"),
     prevent_initial_call=True
 )
 def save_parameter_sets_to_mongo(n_clicks, parameter_sets, gpc_data, campaign_name, polymer_name, 
-                                smiles_string, mw, pdi, image_contents, image_filename):
+                                smiles_string, mw, pdi, image_contents, image_filename,
+                                concentration_range, printing_gap, precursor_vol, motor_speed):
     if not parameter_sets:
         return "No parameter sets to save.", True, "warning", True
     
@@ -2958,7 +2964,11 @@ def save_parameter_sets_to_mongo(n_clicks, parameter_sets, gpc_data, campaign_na
                 "smiles_string": smiles_string,
                 "mw": mw,
                 "pdi": pdi,
-                "created_at": datetime.now()
+                "created_at": datetime.now(),
+                "concentration_range": concentration_range,
+                "printing_gap": printing_gap,
+                "precursor_volume": precursor_vol,
+                "motor_speed": motor_speed,
             }
             
             if gpc_data:
@@ -3425,3 +3435,45 @@ if __name__ == "__main__":
 #         columns=[{"name": "Name", "id": "Name"}, {"name": "Value", "id": "Value"}],
 #     )
 #     return table
+@app.callback(
+    Output('optimization-status', 'children'),
+    Output('optimization-graph', 'figure'),
+    Output('results-table', 'data'),
+    Input('start-optimization', 'n_clicks'),
+    State('input-function', 'value')
+)
+def start_optimization(n_clicks, function_str):
+    if n_clicks is None or not function_str:
+        return "Click the button to start optimization.", {}, []
+
+    # Simulate Bayesian optimization process
+    iterations = 10
+    results = []
+    best_value = float('inf')
+    best_params = None
+
+    for i in range(iterations):
+        # Simulate a random parameter and its evaluation
+        params = np.random.rand(2)
+        value = eval(function_str.replace('x', str(params[0])).replace('y', str(params[1])))
+        results.append({
+            "iteration": i + 1,
+            "best_value": value,
+            "parameters": f"x: {params[0]:.2f}, y: {params[1]:.2f}"
+        })
+        if value < best_value:
+            best_value = value
+            best_params = params
+    # Create a simple graph to show the optimization process
+    fig = {
+        'data': [
+            {'x': [i + 1 for i in range(iterations)], 'y': [result['best_value'] for result in results], 'type': 'line', 'name': 'Best Value'}
+        ],
+        'layout': {
+            'title': 'Optimization Progress',
+            'xaxis': {'title': 'Iteration'},
+            'yaxis': {'title': 'Best Value'},
+            'showlegend': True
+        }
+    }
+    return f"Optimization completed. Best value: {best_value:.2f} at parameters {best_params}.", fig, results
