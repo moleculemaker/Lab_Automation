@@ -3,8 +3,10 @@ import dash_bootstrap_components as dbc
 import dash
 import numpy as np
 import pandas as pd
-from datetime import datetime, timedelta
-import random
+import io
+import contextlib
+import matplotlib.pyplot as plt
+import base64
 
 dash.register_page(
     __name__,
@@ -12,6 +14,177 @@ dash.register_page(
     name="Optimization",
     title="Optimization"
 )
+
+# def plot_optimization_results(optimizer, objective):
+#     """Create selective plots of the optimization results (1, 3, and 4 only)."""
+
+#     import matplotlib.pyplot as plt
+#     import numpy as np
+#     import base64
+#     # import io
+
+#     history = optimizer.get_optimization_history()
+#     train_X, train_Y = optimizer.get_training_data()
+#     true_params, _ = objective.get_optimal_parameters()
+#     true_score = objective.evaluate_at_optimal()
+
+#     # Create a 1x3 subplot layout for the three selected plots
+#     fig, axes = plt.subplots(1, 3, figsize=(21, 6))  # Wider layout
+
+#     ### 1. Optimization Progress (axes[0])
+#     iterations = [h['iteration'] for h in history]
+#     best_values = [h['best_value'] for h in history]
+
+#     axes[0].plot(iterations, best_values, 'b-o', linewidth=2, markersize=6)
+#     axes[0].axhline(y=true_score, color='r', linestyle='--', alpha=0.7, 
+#                     label=f'True optimum: {true_score:.3f}')
+#     axes[0].set_xlabel('Iteration')
+#     axes[0].set_ylabel('Best Observed Value')
+#     axes[0].set_title('Optimization Progress')
+#     axes[0].legend()
+#     axes[0].grid(True, alpha=0.3)
+
+#     ### 3. Parameter Space Exploration (axes[1])
+#     scatter = axes[1].scatter(train_X[:, 0], train_X[:, 1], c=train_Y.squeeze(), 
+#                               cmap='viridis', alpha=0.6, s=50)
+#     axes[1].scatter(optimizer.best_parameters[0], optimizer.best_parameters[1], 
+#                     c='red', s=200, marker='*', label='Best found', 
+#                     edgecolor='black', linewidth=2)
+#     axes[1].scatter(true_params[0], true_params[1], c='orange', s=200, marker='*', 
+#                     label='True optimum', edgecolor='black', linewidth=2)
+#     axes[1].set_xlabel('Concentration')
+#     axes[1].set_ylabel('Print Speed (mm/s)')
+#     axes[1].set_title('Parameter Space Exploration')
+#     axes[1].legend()
+#     plt.colorbar(scatter, ax=axes[1], label='Objective Value')
+
+#     ### 4. Gap Size vs Volume (axes[2])
+#     scatter2 = axes[2].scatter(train_X[:, 2], train_X[:, 3], c=train_Y.squeeze(), 
+#                                cmap='viridis', alpha=0.6, s=50)
+#     axes[2].scatter(optimizer.best_parameters[2], optimizer.best_parameters[3], 
+#                     c='red', s=200, marker='*', label='Best found', 
+#                     edgecolor='black', linewidth=2)
+#     axes[2].scatter(true_params[2], true_params[3], c='orange', s=200, marker='*', 
+#                     label='True optimum', edgecolor='black', linewidth=2)
+#     axes[2].set_xlabel('Gap Size (mm)')
+#     axes[2].set_ylabel('Volume (μL)')
+#     axes[2].set_title('🔍 Gap Size vs Volume')
+#     axes[2].legend()
+#     plt.colorbar(scatter2, ax=axes[2], label='Objective Value')
+
+#     plt.tight_layout()
+#     plt.show()
+
+#     buf = io.BytesIO()
+#     fig.savefig(buf, format="png", bbox_inches='tight')
+#     buf.seek(0)
+#     encoded_image = base64.b64encode(buf.read()).decode("utf-8")
+#     buf.close()
+#     plt.close(fig)
+
+#     return encoded_image
+
+
+# def plot_optimization_results(optimizer, objective):
+#     """Create comprehensive plots of the optimization results."""
+    
+#     history = optimizer.get_optimization_history()
+#     train_X, train_Y = optimizer.get_training_data()
+#     true_params, _ = objective.get_optimal_parameters()
+#     true_score = objective.evaluate_at_optimal()
+    
+#     # Create the visualization
+#     fig, axes = plt.subplots(2, 3, figsize=(18, 12))
+    
+#     # 1. Optimization Progress
+#     iterations = [h['iteration'] for h in history]
+#     best_values = [h['best_value'] for h in history]
+    
+#     axes[0, 0].plot(iterations, best_values, 'b-o', linewidth=2, markersize=6)
+#     axes[0, 0].axhline(y=true_score, color='r', linestyle='--', alpha=0.7, 
+#                        label=f'True optimum: {true_score:.3f}')
+#     axes[0, 0].set_xlabel('Iteration')
+#     axes[0, 0].set_ylabel('Best Observed Value')
+#     axes[0, 0].set_title('Optimization Progress')
+#     axes[0, 0].legend()
+#     axes[0, 0].grid(True, alpha=0.3)
+    
+#     # 2. Improvement Rate
+#     # improvements = [best_values[i] - best_values[0] for i in range(len(best_values))]
+#     # axes[0, 1].plot(iterations, improvements, 'g-o', linewidth=2, markersize=6)
+#     # axes[0, 1].set_xlabel('Iteration')
+#     # axes[0, 1].set_ylabel('Improvement from Initial')
+#     # axes[0, 1].set_title('Cumulative Improvement')
+#     # axes[0, 1].grid(True, alpha=0.3)
+    
+#     # 3. Parameter Space Exploration (Concentration vs Print Speed)
+#     scatter = axes[0, 2].scatter(train_X[:, 0], train_X[:, 1], c=train_Y.squeeze(), 
+#                                 cmap='viridis', alpha=0.6, s=50)
+#     axes[0, 2].scatter(optimizer.best_parameters[0], optimizer.best_parameters[1], 
+#                       c='red', s=200, marker='*', label='Best found', 
+#                       edgecolor='black', linewidth=2)
+#     axes[0, 2].scatter(true_params[0], true_params[1], c='orange', s=200, marker='*', 
+#                       label='True optimum', edgecolor='black', linewidth=2)
+#     axes[0, 2].set_xlabel('Concentration')
+#     axes[0, 2].set_ylabel('Print Speed (mm/s)')
+#     axes[0, 2].set_title('Parameter Space Exploration')
+#     axes[0, 2].legend()
+#     plt.colorbar(scatter, ax=axes[0, 2], label='Objective Value')
+    
+#     # 4. Gap Size vs Volume
+#     scatter2 = axes[1, 0].scatter(train_X[:, 2], train_X[:, 3], c=train_Y.squeeze(), 
+#                                  cmap='viridis', alpha=0.6, s=50)
+#     axes[1, 0].scatter(optimizer.best_parameters[2], optimizer.best_parameters[3], 
+#                       c='red', s=200, marker='*', label='Best found', 
+#                       edgecolor='black', linewidth=2)
+#     axes[1, 0].scatter(true_params[2], true_params[3], c='orange', s=200, marker='*', 
+#                       label='True optimum', edgecolor='black', linewidth=2)
+#     axes[1, 0].set_xlabel('Gap Size (mm)')
+#     axes[1, 0].set_ylabel('Volume (μL)')
+#     axes[1, 0].set_title('🔍 Gap Size vs Volume')
+#     axes[1, 0].legend()
+#     plt.colorbar(scatter2, ax=axes[1, 0], label='Objective Value')
+    
+#     # 5. Objective Value Distribution
+#     # axes[1, 1].hist(train_Y.squeeze().numpy(), bins=20, alpha=0.7, color='skyblue', 
+#     #                edgecolor='black')
+#     # axes[1, 1].axvline(optimizer.best_observed_value, color='red', linestyle='--', 
+#     #                   linewidth=2, label=f'Best: {optimizer.best_observed_value:.3f}')
+#     # axes[1, 1].axvline(true_score, color='orange', linestyle='--', linewidth=2, 
+#     #                   label=f'True: {true_score:.3f}')
+#     # axes[1, 1].set_xlabel('Objective Value')
+#     # axes[1, 1].set_ylabel('Frequency')
+#     # axes[1, 1].set_title('Objective Value Distribution')
+#     # axes[1, 1].legend()
+#     # axes[1, 1].grid(True, alpha=0.3)
+    
+#     # 6. Parameter Convergence
+#     # param_names = ['gap_size', 'volume']
+#     # eval_order = np.arange(len(train_X))
+    
+#     # for i, name in enumerate(param_names):
+#     #     color = plt.cm.Set1(i)
+#     #     axes[1, 2].scatter(eval_order, train_X[:, i], alpha=0.6, s=30, 
+#     #                       c=color, label=name)
+#     #     axes[1, 2].axhline(y=true_params[i], color=color, linestyle='--', alpha=0.7)
+    
+#     # axes[1, 2].set_xlabel('Evaluation Order')
+#     # axes[1, 2].set_ylabel('Parameter Value')
+#     # axes[1, 2].set_title('Parameter Convergence')
+#     # axes[1, 2].legend()
+#     # axes[1, 2].grid(True, alpha=0.3)
+
+#     plt.tight_layout()
+#     plt.show()
+    
+#     buf = io.BytesIO()
+#     fig.savefig(buf, format="png", bbox_inches='tight')
+#     buf.seek(0)
+#     encoded_image = base64.b64encode(buf.read()).decode("utf-8")
+#     buf.close()
+#     plt.close(fig)  # Close the figure to prevent it from showing
+
+#     return encoded_image
 
 layout = html.Div(
     [
@@ -87,104 +260,117 @@ layout = html.Div(
 
     html.Div(id="bo-hyperparam-fields"),
 
+    dbc.Row(
+                    [
+                        dbc.Col([html.H5("Select Parameters to Include")], width=5),
+                    ],
+                    className="mb-2",
+    ),
+
+    html.Div(
+            [
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                dcc.Dropdown(
+                                    id="bo-params-dropdown",
+                                    options=["Concentration", "Print Speed", "Gap Size", "Volume"],
+                                    multi=True,
+                                    value=["Concentration", "Print Speed", "Gap Size", "Volume"],
+                                ),
+                            ],
+                            width=6,
+                        ),
+                    ],
+                    className="mb-3",
+                ),
+            ],
+            id="bo-hyperparam-fields",
+        ),
+    
     dbc.Row([
         dbc.Col([
-            html.Label("Number of Batches"),
-            dbc.Input(id="bo-num-batches", type="number", value=3, min=1)
+            html.Label("Batch Size"),
+            dbc.Input(id="bo-batch-size", type="number", value=8, min=1)
         ], width=4),
-        dcc.Interval(id="bo-generator-timer", interval=1000, n_intervals=0, disabled=True),
-        dcc.Store(id="bo-generated-data", data=[]),
 
         dbc.Col([
-            html.Label("Stopping Criterion"),
-            dcc.Dropdown(
-                id="bo-stopping-criterion",
-                options=[
-                    {"label": "Max Iterations", "value": "max_iter"},
-                    # {"label": "Convergence (No Improvement)", "value": "no_improve"},
-                    {"label": "Time Limit (minutes)", "value": "time_limit"},
-                    # {"label": "Target Objective Reached", "value": "target_value"},
-                ],
-                placeholder="Select stopping rule"
+            html.Label("Target Objective (Required)"),
+            dbc.Input(
+                id="bo-target-objective",
+                type="number",
+                min=0,
+                placeholder="e.g., 0.95"
             )
         ], width=4),
 
-        dbc.Col([
-            html.Label("Stopping Threshold"),
-            dbc.Input(id="bo-stopping-value", type="number", placeholder="Enter threshold")
-        ], width=4),
+        # dbc.Col([
+        #     html.Label("Number of Iterations (Required)"),
+        #     dbc.Input(id="bo-maxiter", type="number", placeholder="e.g., 15", min=1)
+        # ], width=4),
     ], className="mb-3"),
 
-    dbc.Button("Generate Optimizer Parameters", id="bo-generate-btn", color="primary", className="mb-3"),
-    html.Div(id="optimizer-output"),
-
-    html.Div([
-    dbc.Row([
-            dbc.Col([
-                dbc.Button("Pause", id="bo-pause-btn", color="warning", className="me-2"),
-                html.Span("Status: ", style={"fontWeight": "bold"}),
-                html.Span(id="bo-status-label", children="Idle")
-            ])
-        ], className="mb-3")
-    ]),
-
-    dcc.Store(id="bo-status-store", data="idle"),
-
-    html.Div(id="bo-generated-table"),
-
-    dbc.Button("Save Optimizer Parameters", id="bo-save-btn", color="success", className="mt-3", disabled=True),
-
-    dbc.Alert(id="bo-save-alert", is_open=False, color="success", className="mt-3")
+    dbc.Button("Generate and Save Optimizer Parameters", id="bo-generate-btn", color="primary", className="mb-3"),
+    html.Pre(id="optimizer-output1", style={"whiteSpace": "pre-wrap", "border": "1px solid #ccc", "padding": "10px"}),
 
     ],
     className="container",
 )
 
 @callback(
-    Output("optimizer-output", "children"),
+    Output("optimizer-output1", "children"),
     Input("bo-generate-btn", "n_clicks"),
-    State("bo-num-batches", "value"),
-    State("bo-stopping-criterion", "value"),
-    State("bo-stopping-value", "value"),
+    State("bo-batch-size", "value"),
+    State("bo-target-objective", "value"),
+    # State("bo-maxiter", "value"),
     prevent_initial_call=True
 )
-def generate_optimizer_parameters(n_clicks, num_batches, stopping_criterion, stopping_value):
+def generate_optimizer_parameters(n_clicks, bs, target_objective):
     import torch
     from optimizer import BayesianOptimizer, MockObjectiveFunction
 
-    # Define search space bounds
-    if n_clicks > 0:
-        # bounds = torch.tensor([
-        #     [0.1, 1.0],      # concentration
-        #     [10.0, 100.0],   # print_speed
-        #     [0.05, 0.5],     # gap_size
-        #     [5.0, 25.0]      # volume
-        # ]).T
-        bounds = torch.tensor([
-            [2, 20],      # concentration
-            [50.0, 100.0],   # print_speed
-            [0.01, 20],     # gap_size
-            [6.0, 12.0]      # volume
-        ]).T
+    f = io.StringIO()
+    # plot_images = []
+    with contextlib.redirect_stdout(f):
+        # Define search space bounds
+        if n_clicks > 0:
+            bounds = torch.tensor([
+                [0.1, 1.0],      # concentration
+                [10.0, 100.0],   # print_speed
+                [0.05, 0.5],     # gap_size
+                [5.0, 25.0]      # volume
+            ]).T
+            # bounds = torch.tensor([
+            #     [2, 20],      # concentration
+            #     [0.01, 20],     # print_speed
+            #     [50.0, 100.0],   # gap_size
+            #     [6.0, 12.0]      # volume
+            # ]).T
 
-        # Create optimizer and objective function
-        optimizer = BayesianOptimizer(bounds=bounds, batch_size=num_batches)
-        objective = MockObjectiveFunction()
+            # Create optimizer and objective function
+            optimizer = BayesianOptimizer(bounds=bounds, batch_size=bs)
+            objective = MockObjectiveFunction()
 
-        # Run optimization
-        best_params, best_score = optimizer.optimize(
-            objective_function=objective,
-            n_iterations=stopping_value,
-            n_initial_points=10
-        )
-        return html.Div([
-            html.H3("Optimization Results:"),
-            html.P(f"Best concentration: {best_params[0]:.4f}"),
-            html.P(f"Best print speed: {best_params[1]:.4f}"),
-            html.P(f"Best gap size: {best_params[2]:.4f}"),
-            html.P(f"Best volume: {best_params[3]:.4f}"),
-            html.P(f"Best score: {best_score:.4f}")
-        ])
+            # Run optimization
+            best_params, best_score, plot_images = optimizer.optimize(
+                objective_function=objective,
+                n_iterations=200,
+                n_initial_points=10,
+                target=target_objective
+            )
+            print("\n\n")
+            # plot = plot_optimization_results(optimizer, objective)
+            # plot_images.append(plot)
+            # plot_images.append("plot")
+
+            log_text = f.getvalue()
+
+            # Create image components from the base64-encoded plot images
+            image_components = [html.Img(src=f"data:image/png;base64,{img}", style={"width": "100%"}) for img in plot_images]
+
+            # Return the log text and plot images as components
+            return image_components + [log_text]
 
 # @callback(
 #     Output("bo-generator-timer", "disabled"),
@@ -195,7 +381,7 @@ def generate_optimizer_parameters(n_clicks, num_batches, stopping_criterion, sto
 #     Input("bo-generator-timer", "n_intervals"),
 #     State("bo-status-store", "data"),  # 🆕 check if paused
 #     State("bo-generated-data", "data"),
-#     State("bo-num-batches", "value"),
+#     State("bo-batch-size", "value"),
 #     prevent_initial_call=True
 # )
 # def manage_bo_generation(n_clicks, n_intervals, status, current_data, num_batches):
@@ -244,27 +430,6 @@ def generate_optimizer_parameters(n_clicks, num_batches, stopping_criterion, sto
 #         ), len(updated_data) < num_batches
 
 #     return dash.no_update, dash.no_update, dash.no_update, dash.no_update
-
-@callback(
-    Output("bo-save-alert", "children"),
-    Output("bo-save-alert", "is_open"),
-    Input("bo-save-btn", "n_clicks"),
-    prevent_initial_call=True
-)
-def save_bo_params(n):
-    return "BO parameter sets saved successfully!", True
-@callback(
-    Output("bo-stopping-value", "placeholder"),
-    Input("bo-stopping-criterion", "value")
-)
-def update_bo_stopping_placeholder(mode):
-    if mode == "max_iter":
-        return "e.g., 10 iterations"
-    elif mode == "no_improve":
-        return "e.g., 3 stagnant batches"
-    elif mode == "time_limit":
-        return "e.g., 30 minutes"
-    return "Enter threshold"
 
 # @callback(
 #     Output("bo-status-store", "data"),
