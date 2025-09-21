@@ -7,6 +7,8 @@ import io
 import contextlib
 import matplotlib.pyplot as plt
 import base64
+from pymongo import MongoClient
+import gridfs
 
 dash.register_page(
     __name__,
@@ -14,6 +16,9 @@ dash.register_page(
     name="Optimization",
     title="Optimization"
 )
+
+client = MongoClient('mongodb://localhost:27017/')
+db = client['diaogroup']
 
 # def plot_optimization_results(optimizer, objective):
 #     """Create selective plots of the optimization results (1, 3, and 4 only)."""
@@ -360,6 +365,9 @@ def generate_optimizer_parameters(n_clicks, bs, target_objective):
                 target=target_objective
             )
             print("\n\n")
+            buf = io.BytesIO()
+            fig.savefig(buf, format='png')
+            buf.seek(0)
             # plot = plot_optimization_results(optimizer, objective)
             # plot_images.append(plot)
             # plot_images.append("plot")
