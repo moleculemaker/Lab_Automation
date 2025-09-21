@@ -368,6 +368,17 @@ def generate_optimizer_parameters(n_clicks, bs, target_objective):
             buf = io.BytesIO()
             fig.savefig(buf, format='png')
             buf.seek(0)
+            experiment_id = ObjectId("64f5d2a1b1234567890abcdef")
+            file_id = fs.put(buf.getvalue(), filename="sample_plot.png", metadata={"experiment_id": experiment_id})
+            print(f"Stored file in GridFS with file_id: {file_id}")
+            plots_collection = db['plots']
+            plot_doc = {
+                "name": "sample_matplotlib_plot",
+                "experiment_id": experiment_id,
+                "file_id": file_id
+            }
+            plots_collection.insert_one(plot_doc)
+            print("Inserted plot document referencing GridFS file.")
             # plot = plot_optimization_results(optimizer, objective)
             # plot_images.append(plot)
             # plot_images.append("plot")
