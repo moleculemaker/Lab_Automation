@@ -2564,6 +2564,7 @@ def update_temperature_options(selected_solvents):
     Output("sampler-alert", "is_open"),
     Output("sampler-alert", "color"),
     Output("sampler-save-button", "disabled"),
+    Output("sampler-results-plots", "children"),
     Input("sampler-generate-button", "n_clicks"),
     [
         State("sampler-campaign-name", "value"),
@@ -2852,28 +2853,29 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smiles_string
             )
 
             res = html.Div([
-                html.Div([
+                table
+            ])
+            plots = html.Div([
                     html.Div([
                         dcc.Graph(figure=pca_fig)
                     ], className="col-md-6"),
                     html.Div([
                         dcc.Graph(figure=umap_fig)
                     ], className="col-md-6"),
-                ], className="row"),
-                table
-            ])
+                ], className="row")
         else:
             res = html.Div([
                 html.P("Not enough data points for visualization. Generate more samples."),
                 html.H3("Generated Parameter Sets"),
                 table
             ])
+            plots = None
 
         
-        return res, f"Generated {len(parameter_sets)} parameter sets using simple random sampling.", True, "success", False
+        return res, f"Generated {len(parameter_sets)} parameter sets using simple random sampling.", True, "success", False, plots
     except Exception as e:
         print(f"Error generating parameter sets: {e}")
-        return None, f"Failed to generate parameter sets: {str(e)}", True, "danger", True
+        return None, f"Failed to generate parameter sets: {str(e)}", True, "danger", True, None
 
 
 @app.callback(
@@ -2895,6 +2897,7 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smiles_string
     State({"type": "sampler-dropdown", "id": "printing-gap"}, "value"),
     State({"type": "sampler-dropdown", "id": "precursor-volume"}, "value"),
     State({"type": "sampler-dropdown", "id": "motor-speed"}, "value"),
+    State("sampler-results-plots", "children")
     prevent_initial_call=True
 )
 def save_parameter_sets_to_mongo(n_clicks, parameter_sets, gpc_data, campaign_name, polymer_name, 

@@ -540,6 +540,7 @@ layout = html.Div(
                 ),
                 
                 html.Div(id="sampler-results-table", className="mb-3"),
+                html.Div(id="sampler-results-plots", className="mb-3"),
                 
                 dbc.Button(
                     "Save Parameter Sets",

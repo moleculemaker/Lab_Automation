@@ -371,7 +371,7 @@ def generate_optimizer_parameters(n_clicks, bs, target_objective):
             experiment_id = ObjectId("64f5d2a1b1234567890abcdef")
             file_id = fs.put(buf.getvalue(), filename="sample_plot.png", metadata={"experiment_id": experiment_id})
             print(f"Stored file in GridFS with file_id: {file_id}")
-            plots_collection = db['plots']
+            plots_collection = db['optimizer_plots']
             plot_doc = {
                 "name": "sample_matplotlib_plot",
                 "experiment_id": experiment_id,
