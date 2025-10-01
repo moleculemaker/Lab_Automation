@@ -81,7 +81,7 @@ def plot_optimization_results(optimizer, objective):
     buf.close()
     plt.close(fig)
 
-    return encoded_image
+    return encoded_image, fig
 
 class BayesianOptimizer:
     
@@ -216,6 +216,7 @@ class BayesianOptimizer:
     ) -> Tuple[torch.Tensor, float]:
 
         img = []
+        l = []
 
         if verbose:
             print("=" * 60)
@@ -262,7 +263,9 @@ class BayesianOptimizer:
             if verbose:
                 print(f"Current best score: {self.best_observed_value:.4f}")
                 print(f"Current best parameters: {self.best_parameters}")
-            img.append(plot_optimization_results(self, objective_function))
+            encoded_img, fig = plot_optimization_results(self, objective_function)
+            img.append(encoded_img)
+            l.append(fig)
 
             if self.best_observed_value >= target:
                 if verbose:
@@ -277,7 +280,7 @@ class BayesianOptimizer:
             print(f"Final best parameters: {self.best_parameters}")
             print(f"Total evaluations: {len(self.train_X)}")
 
-        return self.best_parameters, self.best_observed_value, img
+        return self.best_parameters, self.best_observed_value, img, l
 
     def get_optimization_history(self) -> List[dict]:
         return self.iteration_history

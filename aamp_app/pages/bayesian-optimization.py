@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import base64
 from pymongo import MongoClient
 import gridfs
+from bson import ObjectId
 
 dash.register_page(
     __name__,
@@ -19,6 +20,7 @@ dash.register_page(
 
 client = MongoClient('mongodb://localhost:27017/')
 db = client['diaogroup']
+fs = gridfs.GridFS(db)
 
 # def plot_optimization_results(optimizer, objective):
 #     """Create selective plots of the optimization results (1, 3, and 4 only)."""
@@ -326,12 +328,13 @@ layout = html.Div(
 @callback(
     Output("optimizer-output1", "children"),
     Input("bo-generate-btn", "n_clicks"),
+    State("recipe-builder-campaign-dropdown", "value"),
     State("bo-batch-size", "value"),
     State("bo-target-objective", "value"),
     # State("bo-maxiter", "value"),
     prevent_initial_call=True
 )
-def generate_optimizer_parameters(n_clicks, bs, target_objective):
+def generate_optimizer_parameters(n_clicks, camp, bs, target_objective):
     import torch
     from optimizer import BayesianOptimizer, MockObjectiveFunction
 
@@ -340,45 +343,41 @@ def generate_optimizer_parameters(n_clicks, bs, target_objective):
     with contextlib.redirect_stdout(f):
         # Define search space bounds
         if n_clicks > 0:
+            collection = db['campaigns']
+            entry = collection.find_one({"campaign_name": camp})
             bounds = torch.tensor([
-                [0.1, 1.0],      # concentration
-                [10.0, 100.0],   # print_speed
-                [0.05, 0.5],     # gap_size
-                [5.0, 25.0]      # volume
+                [min(entry['concentration_range']), max(entry['concentration_range'])],      # concentration
+                [min(entry['motor_speed']), max(entry['motor_speed'])],   # print_speed
+                [min(entry['printing_gap']), max(entry['printing_gap'])],     # gap_size
+                [min(entry['precursor_volume']), max(entry['precursor_volume'])]      # volume
             ]).T
-            # bounds = torch.tensor([
-            #     [2, 20],      # concentration
-            #     [0.01, 20],     # print_speed
-            #     [50.0, 100.0],   # gap_size
-            #     [6.0, 12.0]      # volume
-            # ]).T
+            print(bounds)
 
             # Create optimizer and objective function
             optimizer = BayesianOptimizer(bounds=bounds, batch_size=bs)
             objective = MockObjectiveFunction()
 
             # Run optimization
-            best_params, best_score, plot_images = optimizer.optimize(
+            best_params, best_score, plot_images, ff = optimizer.optimize(
                 objective_function=objective,
                 n_iterations=200,
                 n_initial_points=10,
                 target=target_objective
             )
             print("\n\n")
-            buf = io.BytesIO()
-            fig.savefig(buf, format='png')
-            buf.seek(0)
-            experiment_id = ObjectId("64f5d2a1b1234567890abcdef")
-            file_id = fs.put(buf.getvalue(), filename="sample_plot.png", metadata={"experiment_id": experiment_id})
-            print(f"Stored file in GridFS with file_id: {file_id}")
-            plots_collection = db['optimizer_plots']
-            plot_doc = {
-                "name": "sample_matplotlib_plot",
-                "experiment_id": experiment_id,
-                "file_id": file_id
-            }
-            plots_collection.insert_one(plot_doc)
-            print("Inserted plot document referencing GridFS file.")
+            for i, fig in enumerate(ff):
+                experiment_id = entry['_id']
+                buf = io.BytesIO()
+                fig.savefig(buf, format="png")
+                buf.seek(0)
+                file_id = fs.put(buf.getvalue(), filename=f"sample_plot_{i}.png", metadata={"experiment_id": experiment_id})
+                plots_collection = db['optimizer_plots']
+                plot_doc = {
+                    "name": f"sample_matplotlib_plot_{i}",
+                    "experiment_id": experiment_id,
+                    "file_id": file_id
+                }
+                plots_collection.insert_one(plot_doc)
             # plot = plot_optimization_results(optimizer, objective)
             # plot_images.append(plot)
             # plot_images.append("plot")
