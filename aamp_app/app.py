@@ -31,6 +31,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from scipy.stats import gaussian_kde
 from string import Template
+from pymongo import MongoClient
 
 from db.validation import solutions, films, devices, recipes
 try:
@@ -58,6 +59,8 @@ mongo = MongoDBHelper(
     mongo_uri,
     mongo_db_name,
 )
+
+p1, p2 = None, None
 
 try:
     db_list = mongo.client.list_database_names()
@@ -2863,6 +2866,9 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smiles_string
                         dcc.Graph(figure=umap_fig)
                     ], className="col-md-6"),
                 ], className="row")
+            global p1, p2
+            p1 = pca_fig
+            p2 = umap_fig
         else:
             res = html.Div([
                 html.P("Not enough data points for visualization. Generate more samples."),
@@ -2897,7 +2903,6 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smiles_string
     State({"type": "sampler-dropdown", "id": "printing-gap"}, "value"),
     State({"type": "sampler-dropdown", "id": "precursor-volume"}, "value"),
     State({"type": "sampler-dropdown", "id": "motor-speed"}, "value"),
-    State("sampler-results-plots", "children")
     prevent_initial_call=True
 )
 def save_parameter_sets_to_mongo(n_clicks, parameter_sets, gpc_data, campaign_name, polymer_name, 
@@ -2981,6 +2986,27 @@ def save_parameter_sets_to_mongo(n_clicks, parameter_sets, gpc_data, campaign_na
 
             campaign_result = mongo.db.campaigns.insert_one(campaign_doc)
             campaign_id = campaign_result.inserted_id
+
+            cc = MongoClient('mongodb://localhost:27017/')
+            dd = cc['diaogroup']
+            ff = GridFS(dd)
+            pca_bytes = p1.to_image(format="png")
+            umap_bytes = p2.to_image(format="png")
+            pca_id = ff.put(pca_bytes, filename=f"{campaign_name}_pca.png")
+            umap_id = ff.put(umap_bytes, filename=f"{campaign_name}_umap.png")
+            pca_doc = {
+                "name": f"{campaign_name}_pca",
+                "image_id": pca_id,
+                "campaign_id": campaign_id
+            }
+            umap_doc = {
+                "name": f"{campaign_name}_umap",
+                "image_id": umap_id,
+                "campaign_id": campaign_id
+            }
+            coll = dd['sampler_plots']
+            coll.insert_one(pca_doc)
+            coll.insert_one(umap_doc)
 
             sets_to_insert = [{
                 "campaign_id": campaign_id,

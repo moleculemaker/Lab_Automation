@@ -168,7 +168,13 @@ cd aamp_app
 ```
 They can be commented again once the collections are created in the database.
 
-10. Run the app
+10. Run the following:
+```
+pip install --upgrade dotenv
+plotly_get_chrome
+```
+
+11. Run the app
 ```
 python -m app
 ```
