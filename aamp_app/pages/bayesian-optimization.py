@@ -18,8 +18,8 @@ dash.register_page(
 def emergency_stop():
     os.kill(os.getpid(), signal.SIGINT)
 
-client = MongoClient('mongodb://aamp-user:b6b52bc6b85b8a53af21ae2883b3910d@aamp-mongodb-0.aamp.mmli1.ncsa.illinois.edu/aamp?replicaSet=aamp-mongodb&authSource=admin&tlsAllowInvalidCertificates=true&tls=true')
-db = client['aamp']
+client = MongoClient('mongodb://aamp-dev:dcb22e50d7f310850e748c22e6278e4b@aamp-mongodb-0.aamp.mmli2.ncsa.illinois.edu/aamp?replicaSet=aamp-mongodb&authSource=admin&tlsAllowInvalidCertificates=true&tls=true')
+db = client['aamp-dev']
 fs = gridfs.GridFS(db)
 
 # def plot_optimization_results(optimizer, objective):
