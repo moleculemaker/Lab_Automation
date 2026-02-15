@@ -130,7 +130,8 @@ navbar = dbc.NavbarSimple(
         dbc.NavItem(dbc.NavLink("Sampler", href="/sampler", external_link=True)),
         dbc.NavItem(dbc.NavLink("Recipe Builder", href="/recipe-builder", external_link=True)),
         dbc.NavItem(dbc.NavLink("Solution Map", href="/solution-map", external_link=True)),
-        dbc.NavItem(dbc.NavLink("Optimization", href="/bayesian-optimization", external_link=True)),
+        dbc.NavItem(dbc.NavLink("Autonomous Run", href="/bayesian-optimization", external_link=True)),
+        dbc.NavItem(dbc.NavLink("Manual Run", href="/manual-run", external_link=True)),
         # dbc.DropdownMenu(
         #     children=[
         #         # dbc.DropdownMenuItem(
@@ -2987,27 +2988,6 @@ def save_parameter_sets_to_mongo(n_clicks, parameter_sets, gpc_data, campaign_na
             campaign_result = mongo.db.campaigns.insert_one(campaign_doc)
             campaign_id = campaign_result.inserted_id
 
-            cc = MongoClient('mongodb://localhost:27017/')
-            dd = cc['diaogroup']
-            ff = GridFS(dd)
-            pca_bytes = p1.to_image(format="png")
-            umap_bytes = p2.to_image(format="png")
-            pca_id = ff.put(pca_bytes, filename=f"{campaign_name}_pca.png")
-            umap_id = ff.put(umap_bytes, filename=f"{campaign_name}_umap.png")
-            pca_doc = {
-                "name": f"{campaign_name}_pca",
-                "image_id": pca_id,
-                "campaign_id": campaign_id
-            }
-            umap_doc = {
-                "name": f"{campaign_name}_umap",
-                "image_id": umap_id,
-                "campaign_id": campaign_id
-            }
-            coll = dd['sampler_plots']
-            coll.insert_one(pca_doc)
-            coll.insert_one(umap_doc)
-
             sets_to_insert = [{
                 "campaign_id": campaign_id,
                 "polymer_name": polymer_name,
@@ -3223,9 +3203,6 @@ def generate_recipes(n_clicks, selected_rows, parameter_sets, solution_positions
     prevent_initial_call=True
 )
 def run_recipes_sequentially(n_clicks, generated_scripts):
-    if not generated_scripts:
-        raise PreventUpdate
-    
     log_components = []
     interceptor = ConsoleInterceptor()
     

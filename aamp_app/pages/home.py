@@ -37,7 +37,8 @@ links = {
     "Sampler": "/sampler",
     "Recipe Builder": "/recipe-builder",
     "Solution Map": "/solution-map",
-    "Optimization": "/bayesian-optimization",
+    "Autonomous Run": "/bayesian-optimization",
+    "Manual Run": "/manual-run",
     # "Options": "/options",
 }
 
