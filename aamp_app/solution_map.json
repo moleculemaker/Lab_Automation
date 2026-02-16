@@ -24,10 +24,10 @@
         "status": "occupied"
     },
     "A5": {
-        "polymer": null,
-        "solvent": null,
-        "concentration": null,
-        "status": "empty"
+        "polymer": "Chang",
+        "solvent": "CF",
+        "concentration": 2,
+        "status": "occupied"
     },
     "B1": {
         "polymer": "P3MEEMT",
@@ -36,16 +36,16 @@
         "status": "occupied"
     },
     "B2": {
-        "polymer": null,
-        "solvent": null,
-        "concentration": null,
-        "status": "empty"
+        "polymer": "Chang",
+        "solvent": "CF",
+        "concentration": 10,
+        "status": "occupied"
     },
     "B3": {
-        "polymer": null,
-        "solvent": null,
-        "concentration": null,
-        "status": "empty"
+        "polymer": "Chang",
+        "solvent": "CF",
+        "concentration": 15,
+        "status": "occupied"
     },
     "B4": {
         "polymer": null,
