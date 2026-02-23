@@ -514,7 +514,7 @@ layout = html.Div(
                                     id="sampler-method-dropdown",
                                     options=[
                                         {"label": "Sobol Sequence", "value": "sobol"},
-                                        {"label": "Latin Hypercube Sampling", "value": "lhs"},
+                                        {"label": "Random Sampling", "value": "random"},
                                     ],
                                     value="sobol",
                                 ),

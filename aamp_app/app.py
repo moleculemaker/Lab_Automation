@@ -60,7 +60,6 @@ mongo = MongoDBHelper(
     mongo_db_name,
 )
 
-p1, p2 = None, None
 
 try:
     db_list = mongo.client.list_database_names()
@@ -2562,6 +2561,8 @@ def update_temperature_options(selected_solvents):
     
     return {'display': 'block'}, temp_options
 
+from scipy.stats import qmc
+
 @app.callback(
     Output("sampler-results-table", "children"),
     Output("sampler-alert", "children"),
@@ -2606,6 +2607,283 @@ def update_temperature_options(selected_solvents):
     ],
     prevent_initial_call=True,
 )
+# def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smiles_string, mw, pdi, 
+#                             solvents, toggle_values, toggle_ids, temp_dropdown_values, 
+#                             temp_dropdown_ids, temp_min_values, temp_min_ids, 
+#                             temp_max_values, temp_max_ids, concentration_range, 
+#                             concentration_toggle, concentration_min, concentration_max, 
+#                             printing_gaps, printing_gap_toggle, printing_gap_min, 
+#                             printing_gap_max, precursor_vol, precursor_vol_toggle, 
+#                             precursor_vol_min, precursor_vol_max, motor_speeds, 
+#                             motor_speed_toggle, motor_speed_min, motor_speed_max, 
+#                             sampling_method, num_samples):
+#     if not solvents:
+#         return None, "Please select at least one solvent.", True, "danger", True
+    
+#     try:
+#         temp_toggles = {}
+#         temp_discrete_values = {}
+#         temp_min = {}
+#         temp_max = {}
+        
+#         for toggle_value, toggle_id in zip(toggle_values, toggle_ids):
+#             param = toggle_id["param"]
+#             if param.startswith("temp-"):
+#                 solvent = param.replace("temp-", "")
+#                 temp_toggles[solvent] = toggle_value
+        
+#         for dropdown_value, dropdown_id in zip(temp_dropdown_values, temp_dropdown_ids):
+#             solvent = dropdown_id["index"]
+#             temp_discrete_values[solvent] = dropdown_value
+        
+#         for min_value, min_id in zip(temp_min_values, temp_min_ids):
+#             solvent = min_id["index"]
+#             temp_min[solvent] = min_value
+        
+#         for max_value, max_id in zip(temp_max_values, temp_max_ids):
+#             solvent = max_id["index"]
+#             temp_max[solvent] = max_value
+
+#         parameter_sets = []
+#         sample_count = 1
+        
+#         for solvent in solvents:
+#             is_temp_continuous = temp_toggles.get(solvent, False)
+            
+#             for _ in range(num_samples):
+#                 if is_temp_continuous:
+#                     min_temp = temp_min.get(solvent, TEMP_CHOICES_C[solvent][0])
+#                     max_temp = temp_max.get(solvent, TEMP_CHOICES_C[solvent][1])
+#                     temperature = round(random.uniform(min_temp, max_temp))
+#                 else:
+#                     temp_options = temp_discrete_values.get(solvent, TEMP_CHOICES_D[solvent])
+#                     temperature = round(random.choice(temp_options))
+
+#                 if concentration_toggle:
+#                     concentration = round(random.uniform(concentration_min, concentration_max), 2)
+#                 else:
+#                     concentration = random.choice(concentration_range) if concentration_range else random.choice(CONCEN_D)
+
+#                 if printing_gap_toggle:
+#                     printing_gap = round(random.uniform(printing_gap_min, printing_gap_max))
+#                 else:
+#                     printing_gap = random.choice(printing_gaps) if printing_gaps else random.choice(PRINT_GAP_D)
+                
+#                 if precursor_vol_toggle:
+#                     precursor_volume = round(random.uniform(precursor_vol_min, precursor_vol_max), 1)
+#                 else:
+#                     precursor_volume = random.choice(precursor_vol) if precursor_vol else random.choice(PREC_VOL_D)
+
+#                 if motor_speed_toggle:
+#                     log_speed_min = math.log10(motor_speed_min)
+#                     log_speed_max = math.log10(motor_speed_max)
+#                     log_speed = log_speed_min + random.random() * (log_speed_max - log_speed_min)
+#                     motor_speed = round(10 ** log_speed, 2)
+#                 else:
+#                     motor_speed = random.choice(motor_speeds) if motor_speeds else random.choice(MOTOR_SPEEDS_D)
+                
+#                 # make all the parameters normalized between 0 and 1 using min-max normalization
+#                 if motor_speed_toggle:
+#                     log_speed_min = math.log10(motor_speed_min)
+#                     log_speed_max = math.log10(motor_speed_max)
+#                     motor_speed_norm = (math.log10(motor_speed) - log_speed_min) / (log_speed_max - log_speed_min) if log_speed_max - log_speed_min != 0 else 0
+#                 else:
+#                     motor_speeds_list = motor_speeds if motor_speeds else MOTOR_SPEEDS_D
+#                     log_min = math.log10(min(motor_speeds_list))
+#                     log_max = math.log10(max(motor_speeds_list))
+#                     motor_speed_norm = (math.log10(motor_speed) - log_min) / (log_max - log_min) if log_max - log_min != 0 else 0
+
+#                 if is_temp_continuous:
+#                     min_temp = temp_min.get(solvent, TEMP_CHOICES_C[solvent][0])
+#                     max_temp = temp_max.get(solvent, TEMP_CHOICES_C[solvent][1])
+#                     temperature_norm = (temperature - min_temp) / (max_temp - min_temp)
+#                 else:
+#                     temp_options = temp_discrete_values.get(solvent, TEMP_CHOICES_D[solvent])
+#                     temperature_norm = (temperature - min(temp_options)) / (max(temp_options) - min(temp_options))
+
+#                 if concentration_toggle:
+#                     concentration_norm = (concentration - concentration_min) / (concentration_max - concentration_min) if concentration_max - concentration_min != 0 else 0
+#                 else:
+#                     concentration_list = concentration_range if concentration_range else CONCEN_D
+#                     concentration_norm = (concentration - min(concentration_list)) / (max(concentration_list) - min(concentration_list)) if max(concentration_list) - min(concentration_list) != 0 else 0
+
+#                 if printing_gap_toggle:
+#                     printing_gap_norm = (printing_gap - printing_gap_min) / (printing_gap_max - printing_gap_min) if printing_gap_max - printing_gap_min != 0 else 0
+#                 else:
+#                     printing_gaps_list = printing_gaps if printing_gaps else PRINT_GAP_D
+#                     printing_gap_norm = (printing_gap - min(printing_gaps_list)) / (max(printing_gaps_list) - min(printing_gaps_list)) if max(printing_gaps_list) - min(printing_gaps_list) != 0 else 0
+
+#                 if precursor_vol_toggle:
+#                     precursor_volume_norm = (precursor_volume - precursor_vol_min) / (precursor_vol_max - precursor_vol_min) if precursor_vol_max - precursor_vol_min != 0 else 0
+#                 else:
+#                     precursor_vol_list = precursor_vol if precursor_vol else PREC_VOL_D
+#                     precursor_volume_norm = (precursor_volume - min(precursor_vol_list)) / (max(precursor_vol_list) - min(precursor_vol_list)) if max(precursor_vol_list) - min(precursor_vol_list) != 0 else 0
+
+#                 parameter_set = {
+#                     "sample_no": sample_count,
+#                     "campaign_name": campaign_name,
+#                     "polymer_name": polymer_name,
+#                     "smiles_string": smiles_string,
+#                     "mw": mw,
+#                     "pdi": pdi,
+#                     "motor_speed": motor_speed,
+#                     "temperature": temperature,
+#                     "concentration": concentration,
+#                     "printing_gap": printing_gap,
+#                     "precursor_volume": precursor_volume,
+#                     "solvent": solvent,
+#                     "motor_speed_norm": motor_speed_norm,
+#                     "temperature_norm": temperature_norm,
+#                     "concentration_norm": concentration_norm,
+#                     "printing_gap_norm": printing_gap_norm,
+#                     "precursor_volume_norm": precursor_volume_norm
+#                 }
+                
+#                 parameter_sets.append(parameter_set)
+#                 sample_count += 1
+        
+#         df = pd.DataFrame(parameter_sets)
+#         df = df.sort_values(by=["solvent", "temperature"], ascending=[True, True])
+#         parameter_sets = df.to_dict(orient="records")
+
+#         table = dash_table.DataTable(
+#             id="sampler-results",
+#             columns=[
+#                 {"name": "Sample No", "id": "sample_no"},
+#                 {"name": "Motor Speed", "id": "motor_speed"},
+#                 {"name": "Temperature", "id": "temperature"},
+#                 {"name": "Concentration", "id": "concentration"},
+#                 {"name": "Printing Gap", "id": "printing_gap"},
+#                 {"name": "Precursor Volume", "id": "precursor_volume"},
+#                 {"name": "Solvent", "id": "solvent"},
+#             ],
+#             data=parameter_sets,
+#             style_table={"overflowX": "auto"},
+#         )
+
+#         if len(df) >= 2:
+#             X = df[['motor_speed_norm', 'temperature_norm', 'concentration_norm', 
+#                 'printing_gap_norm', 'precursor_volume_norm']].values
+            
+#             pca = PCA(n_components=2)
+#             pca_result = pca.fit_transform(X)
+            
+#             reducer = umap.UMAP(random_state=42, n_neighbors=min(5, len(df)-1))
+#             umap_result = reducer.fit_transform(X)
+            
+#             n_background = 1000
+#             background_points = np.random.rand(n_background, X.shape[1])
+            
+#             background_pca = pca.transform(background_points)
+#             background_umap = reducer.transform(background_points)
+            
+#             pca_fig = go.Figure()
+            
+#             x_min, x_max = background_pca[:,0].min(), background_pca[:,0].max()
+#             y_min, y_max = background_pca[:,1].min(), background_pca[:,1].max()
+            
+#             xi = np.linspace(x_min, x_max, 100)
+#             yi = np.linspace(y_min, y_max, 100)
+#             xi, yi = np.meshgrid(xi, yi)
+            
+#             positions = np.vstack([xi.ravel(), yi.ravel()])
+#             values = np.vstack([background_pca[:,0], background_pca[:,1]])
+#             kernel = gaussian_kde(values)
+#             z = np.reshape(kernel(positions).T, xi.shape)
+            
+#             pca_fig.add_trace(go.Contour(
+#                 z=z,
+#                 x=xi[0],
+#                 y=yi[:,0],
+#                 colorscale='Blues',
+#                 showscale=False,
+#                 opacity=0.5,
+#                 name='Parameter Space Density'
+#             ))
+            
+#             for solvent in df['solvent'].unique():
+#                 mask = df['solvent'] == solvent
+#                 pca_fig.add_trace(go.Scatter(
+#                     x=pca_result[mask, 0],
+#                     y=pca_result[mask, 1],
+#                     mode='markers',
+#                     marker=dict(size=8),
+#                     name=solvent
+#                 ))
+            
+#             pca_fig.update_layout(
+#                 title='PCA Visualization of Parameter Sets',
+#                 xaxis_title='PCA Component 1',
+#                 yaxis_title='PCA Component 2'
+#             )
+            
+#             umap_fig = go.Figure()
+            
+#             x_min, x_max = background_umap[:,0].min(), background_umap[:,0].max()
+#             y_min, y_max = background_umap[:,1].min(), background_umap[:,1].max()
+            
+#             xi = np.linspace(x_min, x_max, 100)
+#             yi = np.linspace(y_min, y_max, 100)
+#             xi, yi = np.meshgrid(xi, yi)
+            
+#             positions = np.vstack([xi.ravel(), yi.ravel()])
+#             values = np.vstack([background_umap[:,0], background_umap[:,1]])
+#             kernel = gaussian_kde(values)
+#             z = np.reshape(kernel(positions).T, xi.shape)
+            
+#             umap_fig.add_trace(go.Contour(
+#                 z=z,
+#                 x=xi[0],
+#                 y=yi[:,0],
+#                 colorscale='Blues',
+#                 showscale=False,
+#                 opacity=0.5,
+#                 name='Parameter Space Density'
+#             ))
+            
+#             for solvent in df['solvent'].unique():
+#                 mask = df['solvent'] == solvent
+#                 umap_fig.add_trace(go.Scatter(
+#                     x=umap_result[mask, 0],
+#                     y=umap_result[mask, 1],
+#                     mode='markers',
+#                     marker=dict(size=8),
+#                     name=solvent
+#                 ))
+            
+#             umap_fig.update_layout(
+#                 title='UMAP Visualization of Parameter Sets',
+#                 xaxis_title='UMAP Component 1',
+#                 yaxis_title='UMAP Component 2'
+#             )
+
+#             res = html.Div([
+#                 table
+#             ])
+#             plots = html.Div([
+#                     html.Div([
+#                         dcc.Graph(figure=pca_fig)
+#                     ], className="col-md-6"),
+#                     html.Div([
+#                         dcc.Graph(figure=umap_fig)
+#                     ], className="col-md-6"),
+#                 ], className="row")
+#             global p1, p2
+#             p1 = pca_fig
+#             p2 = umap_fig
+#         else:
+#             res = html.Div([
+#                 html.P("Not enough data points for visualization. Generate more samples."),
+#                 html.H3("Generated Parameter Sets"),
+#                 table
+#             ])
+#             plots = None
+
+        
+#         return res, f"Generated {len(parameter_sets)} parameter sets using simple random sampling.", True, "success", False, plots
+#     except Exception as e:
+#         print(f"Error generating parameter sets: {e}")
+#         return None, f"Failed to generate parameter sets: {str(e)}", True, "danger", True, None
 def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smiles_string, mw, pdi, 
                             solvents, toggle_values, toggle_ids, temp_dropdown_values, 
                             temp_dropdown_ids, temp_min_values, temp_min_ids, 
@@ -2616,109 +2894,142 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smiles_string
                             precursor_vol_min, precursor_vol_max, motor_speeds, 
                             motor_speed_toggle, motor_speed_min, motor_speed_max, 
                             sampling_method, num_samples):
+
     if not solvents:
-        return None, "Please select at least one solvent.", True, "danger", True
-    
+        return None, "Please select at least one solvent.", True, "danger", True, None
+
     try:
         temp_toggles = {}
         temp_discrete_values = {}
         temp_min = {}
         temp_max = {}
-        
+
         for toggle_value, toggle_id in zip(toggle_values, toggle_ids):
             param = toggle_id["param"]
             if param.startswith("temp-"):
                 solvent = param.replace("temp-", "")
                 temp_toggles[solvent] = toggle_value
-        
+
         for dropdown_value, dropdown_id in zip(temp_dropdown_values, temp_dropdown_ids):
-            solvent = dropdown_id["index"]
-            temp_discrete_values[solvent] = dropdown_value
-        
+            temp_discrete_values[dropdown_id["index"]] = dropdown_value
+
         for min_value, min_id in zip(temp_min_values, temp_min_ids):
-            solvent = min_id["index"]
-            temp_min[solvent] = min_value
-        
+            temp_min[min_id["index"]] = min_value
+
         for max_value, max_id in zip(temp_max_values, temp_max_ids):
-            solvent = max_id["index"]
-            temp_max[solvent] = max_value
+            temp_max[max_id["index"]] = max_value
+
+        # ---------------------------
+        # Sobol Setup
+        # ---------------------------
+        if sampling_method == "sobol":
+            dim = 5
+            sobol_engine = qmc.Sobol(d=dim, scramble=True)
+            sobol_points = sobol_engine.random(n=num_samples * len(solvents))
+            sobol_index = 0
 
         parameter_sets = []
         sample_count = 1
-        
+
         for solvent in solvents:
             is_temp_continuous = temp_toggles.get(solvent, False)
-            
+
             for _ in range(num_samples):
-                if is_temp_continuous:
-                    min_temp = temp_min.get(solvent, TEMP_CHOICES_C[solvent][0])
-                    max_temp = temp_max.get(solvent, TEMP_CHOICES_C[solvent][1])
-                    temperature = round(random.uniform(min_temp, max_temp))
-                else:
-                    temp_options = temp_discrete_values.get(solvent, TEMP_CHOICES_D[solvent])
-                    temperature = round(random.choice(temp_options))
 
-                if concentration_toggle:
-                    concentration = round(random.uniform(concentration_min, concentration_max), 2)
-                else:
-                    concentration = random.choice(concentration_range) if concentration_range else random.choice(CONCEN_D)
+                if sampling_method == "sobol":
+                    u = sobol_points[sobol_index]
+                    sobol_index += 1
 
-                if printing_gap_toggle:
-                    printing_gap = round(random.uniform(printing_gap_min, printing_gap_max))
-                else:
-                    printing_gap = random.choice(printing_gaps) if printing_gaps else random.choice(PRINT_GAP_D)
-                
-                if precursor_vol_toggle:
-                    precursor_volume = round(random.uniform(precursor_vol_min, precursor_vol_max), 1)
-                else:
-                    precursor_volume = random.choice(precursor_vol) if precursor_vol else random.choice(PREC_VOL_D)
-
+                # ---------------- MOTOR SPEED ----------------
                 if motor_speed_toggle:
-                    log_speed_min = math.log10(motor_speed_min)
-                    log_speed_max = math.log10(motor_speed_max)
-                    log_speed = log_speed_min + random.random() * (log_speed_max - log_speed_min)
+                    log_min = math.log10(motor_speed_min)
+                    log_max = math.log10(motor_speed_max)
+
+                    if sampling_method == "sobol":
+                        log_speed = log_min + u[0] * (log_max - log_min)
+                    else:
+                        log_speed = log_min + random.random() * (log_max - log_min)
+
                     motor_speed = round(10 ** log_speed, 2)
                 else:
                     motor_speed = random.choice(motor_speeds) if motor_speeds else random.choice(MOTOR_SPEEDS_D)
-                
-                # make all the parameters normalized between 0 and 1 using min-max normalization
-                if motor_speed_toggle:
-                    log_speed_min = math.log10(motor_speed_min)
-                    log_speed_max = math.log10(motor_speed_max)
-                    motor_speed_norm = (math.log10(motor_speed) - log_speed_min) / (log_speed_max - log_speed_min) if log_speed_max - log_speed_min != 0 else 0
-                else:
-                    motor_speeds_list = motor_speeds if motor_speeds else MOTOR_SPEEDS_D
-                    log_min = math.log10(min(motor_speeds_list))
-                    log_max = math.log10(max(motor_speeds_list))
-                    motor_speed_norm = (math.log10(motor_speed) - log_min) / (log_max - log_min) if log_max - log_min != 0 else 0
 
+                # ---------------- TEMPERATURE ----------------
                 if is_temp_continuous:
                     min_temp = temp_min.get(solvent, TEMP_CHOICES_C[solvent][0])
                     max_temp = temp_max.get(solvent, TEMP_CHOICES_C[solvent][1])
-                    temperature_norm = (temperature - min_temp) / (max_temp - min_temp)
+
+                    if sampling_method == "sobol":
+                        temperature = round(min_temp + u[1] * (max_temp - min_temp))
+                    else:
+                        temperature = round(random.uniform(min_temp, max_temp))
                 else:
                     temp_options = temp_discrete_values.get(solvent, TEMP_CHOICES_D[solvent])
-                    temperature_norm = (temperature - min(temp_options)) / (max(temp_options) - min(temp_options))
+                    temperature = random.choice(temp_options)
+
+                # ---------------- CONCENTRATION ----------------
+                if concentration_toggle:
+                    if sampling_method == "sobol":
+                        concentration = round(
+                            concentration_min + u[2] * (concentration_max - concentration_min), 2
+                        )
+                    else:
+                        concentration = round(random.uniform(concentration_min, concentration_max), 2)
+                else:
+                    concentration = random.choice(concentration_range) if concentration_range else random.choice(CONCEN_D)
+
+                # ---------------- PRINTING GAP ----------------
+                if printing_gap_toggle:
+                    if sampling_method == "sobol":
+                        printing_gap = round(
+                            printing_gap_min + u[3] * (printing_gap_max - printing_gap_min)
+                        )
+                    else:
+                        printing_gap = round(random.uniform(printing_gap_min, printing_gap_max))
+                else:
+                    printing_gap = random.choice(printing_gaps) if printing_gaps else random.choice(PRINT_GAP_D)
+
+                # ---------------- PRECURSOR VOLUME ----------------
+                if precursor_vol_toggle:
+                    if sampling_method == "sobol":
+                        precursor_volume = round(
+                            precursor_vol_min + u[4] * (precursor_vol_max - precursor_vol_min), 1
+                        )
+                    else:
+                        precursor_volume = round(random.uniform(precursor_vol_min, precursor_vol_max), 1)
+                else:
+                    precursor_volume = random.choice(precursor_vol) if precursor_vol else random.choice(PREC_VOL_D)
+
+                # ---------------- NORMALIZATION ----------------
+                log_min = math.log10(motor_speed_min) if motor_speed_toggle else math.log10(min(motor_speeds if motor_speeds else MOTOR_SPEEDS_D))
+                log_max = math.log10(motor_speed_max) if motor_speed_toggle else math.log10(max(motor_speeds if motor_speeds else MOTOR_SPEEDS_D))
+                motor_speed_norm = (math.log10(motor_speed) - log_min) / (log_max - log_min) if log_max - log_min != 0 else 0
+
+                if is_temp_continuous:
+                    temperature_norm = (temperature - min_temp) / (max_temp - min_temp) if max_temp - min_temp != 0 else 0
+                else:
+                    temp_list = temp_discrete_values.get(solvent, TEMP_CHOICES_D[solvent])
+                    temperature_norm = (temperature - min(temp_list)) / (max(temp_list) - min(temp_list)) if max(temp_list) - min(temp_list) != 0 else 0
 
                 if concentration_toggle:
                     concentration_norm = (concentration - concentration_min) / (concentration_max - concentration_min) if concentration_max - concentration_min != 0 else 0
                 else:
-                    concentration_list = concentration_range if concentration_range else CONCEN_D
-                    concentration_norm = (concentration - min(concentration_list)) / (max(concentration_list) - min(concentration_list)) if max(concentration_list) - min(concentration_list) != 0 else 0
+                    c_list = concentration_range if concentration_range else CONCEN_D
+                    concentration_norm = (concentration - min(c_list)) / (max(c_list) - min(c_list)) if max(c_list) - min(c_list) != 0 else 0
 
                 if printing_gap_toggle:
                     printing_gap_norm = (printing_gap - printing_gap_min) / (printing_gap_max - printing_gap_min) if printing_gap_max - printing_gap_min != 0 else 0
                 else:
-                    printing_gaps_list = printing_gaps if printing_gaps else PRINT_GAP_D
-                    printing_gap_norm = (printing_gap - min(printing_gaps_list)) / (max(printing_gaps_list) - min(printing_gaps_list)) if max(printing_gaps_list) - min(printing_gaps_list) != 0 else 0
+                    pg_list = printing_gaps if printing_gaps else PRINT_GAP_D
+                    printing_gap_norm = (printing_gap - min(pg_list)) / (max(pg_list) - min(pg_list)) if max(pg_list) - min(pg_list) != 0 else 0
 
                 if precursor_vol_toggle:
                     precursor_volume_norm = (precursor_volume - precursor_vol_min) / (precursor_vol_max - precursor_vol_min) if precursor_vol_max - precursor_vol_min != 0 else 0
                 else:
-                    precursor_vol_list = precursor_vol if precursor_vol else PREC_VOL_D
-                    precursor_volume_norm = (precursor_volume - min(precursor_vol_list)) / (max(precursor_vol_list) - min(precursor_vol_list)) if max(precursor_vol_list) - min(precursor_vol_list) != 0 else 0
+                    pv_list = precursor_vol if precursor_vol else PREC_VOL_D
+                    precursor_volume_norm = (precursor_volume - min(pv_list)) / (max(pv_list) - min(pv_list)) if max(pv_list) - min(pv_list) != 0 else 0
 
-                parameter_set = {
+                parameter_sets.append({
                     "sample_no": sample_count,
                     "campaign_name": campaign_name,
                     "polymer_name": polymer_name,
@@ -2736,150 +3047,27 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smiles_string
                     "concentration_norm": concentration_norm,
                     "printing_gap_norm": printing_gap_norm,
                     "precursor_volume_norm": precursor_volume_norm
-                }
-                
-                parameter_sets.append(parameter_set)
+                })
+
                 sample_count += 1
-        
+
         df = pd.DataFrame(parameter_sets)
-        df = df.sort_values(by=["solvent", "temperature"], ascending=[True, True])
-        parameter_sets = df.to_dict(orient="records")
+        df = df.sort_values(by=["solvent", "temperature"])
 
         table = dash_table.DataTable(
             id="sampler-results",
-            columns=[
-                {"name": "Sample No", "id": "sample_no"},
-                {"name": "Motor Speed", "id": "motor_speed"},
-                {"name": "Temperature", "id": "temperature"},
-                {"name": "Concentration", "id": "concentration"},
-                {"name": "Printing Gap", "id": "printing_gap"},
-                {"name": "Precursor Volume", "id": "precursor_volume"},
-                {"name": "Solvent", "id": "solvent"},
-            ],
-            data=parameter_sets,
+            columns=[{"name": col.replace("_", " ").title(), "id": col}
+                     for col in ["sample_no", "motor_speed", "temperature",
+                                 "concentration", "printing_gap",
+                                 "precursor_volume", "solvent"]],
+            data=df.to_dict("records"),
             style_table={"overflowX": "auto"},
         )
 
-        if len(df) >= 2:
-            X = df[['motor_speed_norm', 'temperature_norm', 'concentration_norm', 
-                'printing_gap_norm', 'precursor_volume_norm']].values
-            
-            pca = PCA(n_components=2)
-            pca_result = pca.fit_transform(X)
-            
-            reducer = umap.UMAP(random_state=42, n_neighbors=min(5, len(df)-1))
-            umap_result = reducer.fit_transform(X)
-            
-            n_background = 1000
-            background_points = np.random.rand(n_background, X.shape[1])
-            
-            background_pca = pca.transform(background_points)
-            background_umap = reducer.transform(background_points)
-            
-            pca_fig = go.Figure()
-            
-            x_min, x_max = background_pca[:,0].min(), background_pca[:,0].max()
-            y_min, y_max = background_pca[:,1].min(), background_pca[:,1].max()
-            
-            xi = np.linspace(x_min, x_max, 100)
-            yi = np.linspace(y_min, y_max, 100)
-            xi, yi = np.meshgrid(xi, yi)
-            
-            positions = np.vstack([xi.ravel(), yi.ravel()])
-            values = np.vstack([background_pca[:,0], background_pca[:,1]])
-            kernel = gaussian_kde(values)
-            z = np.reshape(kernel(positions).T, xi.shape)
-            
-            pca_fig.add_trace(go.Contour(
-                z=z,
-                x=xi[0],
-                y=yi[:,0],
-                colorscale='Blues',
-                showscale=False,
-                opacity=0.5,
-                name='Parameter Space Density'
-            ))
-            
-            for solvent in df['solvent'].unique():
-                mask = df['solvent'] == solvent
-                pca_fig.add_trace(go.Scatter(
-                    x=pca_result[mask, 0],
-                    y=pca_result[mask, 1],
-                    mode='markers',
-                    marker=dict(size=8),
-                    name=solvent
-                ))
-            
-            pca_fig.update_layout(
-                title='PCA Visualization of Parameter Sets',
-                xaxis_title='PCA Component 1',
-                yaxis_title='PCA Component 2'
-            )
-            
-            umap_fig = go.Figure()
-            
-            x_min, x_max = background_umap[:,0].min(), background_umap[:,0].max()
-            y_min, y_max = background_umap[:,1].min(), background_umap[:,1].max()
-            
-            xi = np.linspace(x_min, x_max, 100)
-            yi = np.linspace(y_min, y_max, 100)
-            xi, yi = np.meshgrid(xi, yi)
-            
-            positions = np.vstack([xi.ravel(), yi.ravel()])
-            values = np.vstack([background_umap[:,0], background_umap[:,1]])
-            kernel = gaussian_kde(values)
-            z = np.reshape(kernel(positions).T, xi.shape)
-            
-            umap_fig.add_trace(go.Contour(
-                z=z,
-                x=xi[0],
-                y=yi[:,0],
-                colorscale='Blues',
-                showscale=False,
-                opacity=0.5,
-                name='Parameter Space Density'
-            ))
-            
-            for solvent in df['solvent'].unique():
-                mask = df['solvent'] == solvent
-                umap_fig.add_trace(go.Scatter(
-                    x=umap_result[mask, 0],
-                    y=umap_result[mask, 1],
-                    mode='markers',
-                    marker=dict(size=8),
-                    name=solvent
-                ))
-            
-            umap_fig.update_layout(
-                title='UMAP Visualization of Parameter Sets',
-                xaxis_title='UMAP Component 1',
-                yaxis_title='UMAP Component 2'
-            )
+        return html.Div([table]), \
+               f"Generated {len(df)} parameter sets using {sampling_method} sampling.", \
+               True, "success", False, None
 
-            res = html.Div([
-                table
-            ])
-            plots = html.Div([
-                    html.Div([
-                        dcc.Graph(figure=pca_fig)
-                    ], className="col-md-6"),
-                    html.Div([
-                        dcc.Graph(figure=umap_fig)
-                    ], className="col-md-6"),
-                ], className="row")
-            global p1, p2
-            p1 = pca_fig
-            p2 = umap_fig
-        else:
-            res = html.Div([
-                html.P("Not enough data points for visualization. Generate more samples."),
-                html.H3("Generated Parameter Sets"),
-                table
-            ])
-            plots = None
-
-        
-        return res, f"Generated {len(parameter_sets)} parameter sets using simple random sampling.", True, "success", False, plots
     except Exception as e:
         print(f"Error generating parameter sets: {e}")
         return None, f"Failed to generate parameter sets: {str(e)}", True, "danger", True, None
