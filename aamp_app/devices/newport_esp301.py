@@ -1,5 +1,5 @@
 import time
-from typing import Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 import functools
 
 from .device import SerialDevice, check_initialized, check_serial
@@ -20,6 +20,28 @@ def check_axis_num(func):
     return wrapper
 
 class NewportESP301(SerialDevice):
+    UNIT_CODE_BY_NAME = {
+        "encoder_count": 0,
+        "motor_step": 1,
+        "mm": 2,
+        "micrometer": 3,
+        "inch": 4,
+        "milli_inch": 5,
+        "micro_inch": 6,
+        "deg": 7,
+        "gradian": 8,
+        "radian": 9,
+        "milliradian": 10,
+        "microradian": 11,
+    }
+
+    DEFAULT_AXIS_CONFIG = {
+        "motion_type": "linear",
+        "units": "mm",
+        "home_mode": "OR4",
+        "zero_position": 0.0,
+    }
+
     def __init__(
             self, 
             name: str,
@@ -28,7 +50,8 @@ class NewportESP301(SerialDevice):
             timeout: Optional[float] = 1.0,
             axis_list: Tuple[int, ...] = (1,),
             default_speed: float = 20.0,
-            poll_interval: float = 0.1):
+            poll_interval: float = 0.1,
+            axis_configs: Optional[Dict[int, Dict[str, Union[str, float]]]] = None):
 
         super().__init__(name, port, baudrate, timeout)
         self._axis_list = axis_list
@@ -37,6 +60,7 @@ class NewportESP301(SerialDevice):
         self._poll_interval = poll_interval
         self._max_speed = 200.0 # make list
         # self._max_speed_list = max_speed_list
+        self._axis_configs = self._normalize_axis_configs(axis_configs)
 
     def get_init_args(self) -> dict:
         args_dict = {
@@ -47,6 +71,7 @@ class NewportESP301(SerialDevice):
             "axis_list": self._axis_list,
             "default_speed": self._default_speed,
             "poll_interval": self._poll_interval,
+            "axis_configs": self._axis_configs,
         }
         return args_dict
 
@@ -58,6 +83,7 @@ class NewportESP301(SerialDevice):
         self._axis_list = args_dict["axis_list"]
         self._default_speed = args_dict["default_speed"]
         self._poll_interval = args_dict["poll_interval"]
+        self._axis_configs = self._normalize_axis_configs(args_dict.get("axis_configs"))
 
     @property
     def default_speed(self) -> float:
@@ -67,6 +93,51 @@ class NewportESP301(SerialDevice):
     def default_speed(self, speed: float):
         if speed > 0.0 and speed < self._max_speed:
             self._default_speed = speed
+
+    def _normalize_axis_configs(
+        self,
+        axis_configs: Optional[Dict[int, Dict[str, Union[str, float]]]]
+    ) -> Dict[int, Dict[str, Union[str, float]]]:
+        normalized_configs: Dict[int, Dict[str, Union[str, float]]] = {}
+
+        for axis in self._axis_list:
+            config = dict(NewportESP301.DEFAULT_AXIS_CONFIG)
+            if axis_configs and axis in axis_configs:
+                config.update(axis_configs[axis])
+
+            motion_type = str(config.get("motion_type", "linear")).lower()
+            units = config.get("units")
+            if units is None:
+                units = "deg" if motion_type == "rotary" else "mm"
+            else:
+                units = str(units).lower()
+
+            config["motion_type"] = motion_type
+            config["units"] = units
+            config["home_mode"] = str(config.get("home_mode", "OR4")).upper()
+            config["zero_position"] = float(config.get("zero_position", 0.0))
+            config["default_speed"] = float(config.get("default_speed", self._default_speed))
+            config["max_speed"] = float(config.get("max_speed", self._max_speed))
+            normalized_configs[axis] = config
+
+        return normalized_configs
+
+    def _get_axis_config(self, axis_number: int) -> Dict[str, Union[str, float]]:
+        if axis_number not in self._axis_configs:
+            self._axis_configs = self._normalize_axis_configs(self._axis_configs)
+        return self._axis_configs[axis_number]
+
+    def _get_unit_code(self, axis_number: int) -> int:
+        units = str(self._get_axis_config(axis_number)["units"]).lower()
+        if units not in NewportESP301.UNIT_CODE_BY_NAME:
+            raise ValueError(f"Unsupported ESP301 unit '{units}' for axis {axis_number}")
+        return NewportESP301.UNIT_CODE_BY_NAME[units]
+
+    def _get_axis_default_speed(self, axis_number: int) -> float:
+        return float(self._get_axis_config(axis_number)["default_speed"])
+
+    def _get_axis_max_speed(self, axis_number: int) -> float:
+        return float(self._get_axis_config(axis_number)["max_speed"])
 
     # check_error already has serial check
     # easier to just set is_intialized False at the very beginning
@@ -87,8 +158,22 @@ class NewportESP301(SerialDevice):
             if not was_turned_on:
                 self._is_initialized = False
                 return (was_turned_on, message)
-            # set units to mm, homing value to 0, set max speed, set current speed 
-            command = str(axis) + "SN2;" + str(axis) + "SH0;" + str(axis) + "VU" + str(self._max_speed) + ";" + str(axis) + "VA" + str(self.default_speed) + "\r"
+
+            try:
+                unit_code = self._get_unit_code(axis)
+            except ValueError as exc:
+                self._is_initialized = False
+                return (False, str(exc))
+
+            axis_max_speed = self._get_axis_max_speed(axis)
+            axis_default_speed = self._get_axis_default_speed(axis)
+            command = (
+                str(axis) + "SN" + str(unit_code)
+                + ";" + str(axis) + "SH0"
+                + ";" + str(axis) + "VU" + str(axis_max_speed)
+                + ";" + str(axis) + "VA" + str(axis_default_speed)
+                + "\r"
+            )
             self.ser.write(command.encode('ascii'))
 
         # Make sure initialization of settings was successful
@@ -104,7 +189,7 @@ class NewportESP301(SerialDevice):
                 return (was_homed, message)
     
         self._is_initialized = True
-        return (True, "Successfully initialized axes by setting units to mm, settings max/current speeds, and homing. Current position set to zero.")
+        return (True, "Successfully initialized ESP301 axes with axis-specific units, speed settings, and homing.")
 
     # move_speed_absolute already has serial check
     def deinitialize(self, reset_init_flag: bool = True) -> Tuple[bool, str]:
@@ -112,7 +197,8 @@ class NewportESP301(SerialDevice):
         #     return (False, "Serial port " + self._port + " is not open. ")
 
         for axis in self._axis_list:
-            was_zeroed, message = self.move_speed_absolute(0.0, speed=None, axis_number=axis)
+            zero_position = float(self._get_axis_config(axis)["zero_position"])
+            was_zeroed, message = self.move_speed_absolute(axis, zero_position, speed=None)
             if not was_zeroed:
                 return (was_zeroed, message)
 
@@ -123,11 +209,13 @@ class NewportESP301(SerialDevice):
 
     # make a home_all function
     @check_serial
+    @check_axis_num
     def home(self, axis_number: int) -> Tuple[bool, str]:
         # if not self.ser.is_open:
         #     return (False, "Serial port " + self._port + " is not open. ")
 
-        command = str(axis_number) + "OR4\r"
+        home_mode = str(self._get_axis_config(axis_number)["home_mode"])
+        command = str(axis_number) + home_mode + "\r"
         self.ser.write(command.encode('ascii'))
 
         while self.is_any_moving():
@@ -139,7 +227,17 @@ class NewportESP301(SerialDevice):
         if not was_successful:
             return (was_successful, message)
         else:
-            return (True, "Successfully homed axes " + str(axis_number))
+            axis_config = self._get_axis_config(axis_number)
+            return (
+                True,
+                "Successfully homed axis "
+                + str(axis_number)
+                + " using "
+                + home_mode
+                + " in "
+                + str(axis_config["units"])
+                + "."
+            )
 
     # Consider a decorator for checks?
     @check_serial
@@ -159,7 +257,7 @@ class NewportESP301(SerialDevice):
             return (False, "Position was not specified")
 
         if speed is None:
-            speed = self._default_speed
+            speed = self._get_axis_default_speed(axis_number)
 
         command = str(axis_number) + "VA" + str(speed) +"\r"
         self.ser.write(command.encode('ascii'))
@@ -201,7 +299,7 @@ class NewportESP301(SerialDevice):
             return (False, "Distance was not specified")
         
         if speed is None:
-            speed = self._default_speed
+            speed = self._get_axis_default_speed(axis_number)
 
         command = str(axis_number) + "VA" + str(speed) +"\r"
         self.ser.write(command.encode('ascii'))

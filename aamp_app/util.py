@@ -3,12 +3,14 @@ from commands.utility_commands import LoopStartCommand, LoopEndCommand
 from devices.heating_stage import HeatingStage
 from devices.multi_stepper import MultiStepper
 from devices.newport_esp301 import NewportESP301
+from devices.newport_94043a_solar_sim import Newport94043ASolarSim
 from devices.festo_solenoid_valve import FestoSolenoidValve
 from devices.ximea_camera import XimeaCamera
 from devices.dummy_heater import DummyHeater
 from devices.dummy_motor import DummyMotor
 from devices.linear_stage_150 import LinearStage150
 from devices.mts50_z8 import MTS50_Z8
+from devices.z812 import Z812
 from devices.keithley_2450 import Keithley2450
 from devices.mfc import MassFlowController
 from devices.oxygen_sensor import OxygenSensor
@@ -20,6 +22,7 @@ from devices.ximea_camera import XimeaCamera
 
 from commands.linear_stage_150_commands import *
 from commands.mts50_z8_commands import *
+from commands.z812_commands import *
 from commands.dummy_heater_commands import *
 from commands.dummy_motor_commands import *
 from commands.dummy_meter_commands import *
@@ -32,6 +35,7 @@ from commands.multi_stepper_commands import *
 from commands.mfc_commands import *
 from commands.sht85_sensor_commands import *
 from commands.newport_esp301_commands import *
+from commands.newport_94043a_solar_sim_commands import *
 from commands.utility_commands import *
 from commands.psd6_syringe_pump_commands import *
 from commands.ximea_camera_commands import *
@@ -394,7 +398,7 @@ devices_ref_redundancy = {
             channel=1,
         ),
         "serial": True,
-        "serial_sequence": ["LinearStage150Connect", "LinearStage150EnableMotor"],
+        "serial_sequence": ["LinearStage150Connect", "LinearStage150Initialize"],
         "import_device": "from devices.linear_stage_150 import LinearStage150",
         "import_commands": "from commands.linear_stage_150_commands import *",
         "telemetry": {
@@ -509,9 +513,9 @@ devices_ref_redundancy = {
                         "notes": "",
                     },
                     "position": {
-                        "default": 0,
-                        "type": int,
-                        "notes": "",
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Absolute position in mm.",
                     },
                 },
                 "obj": LinearStage150MoveAbsolute,
@@ -525,9 +529,9 @@ devices_ref_redundancy = {
                         "notes": "",
                     },
                     "distance": {
-                        "default": 0,
-                        "type": int,
-                        "notes": "",
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Relative distance in mm.",
                     },
                 },
                 "obj": LinearStage150MoveRelative,
@@ -664,6 +668,149 @@ devices_ref_redundancy = {
                     },
                 },
                 "obj": MTS50_Z8MoveRelative,
+            },
+        },
+    },
+    "Z812": {
+        "obj": Z812,
+        "serial": True,
+        "serial_sequence": ["Z812Connect", "Z812Initialize"],
+        "import_device": "from devices.z812 import Z812",
+        "import_commands": "from commands.z812_commands import *",
+        "telemetry": {
+            "parameters": {
+                "position": {
+                    "function_name": "get_position",
+                    "data_type": "float",
+                    "units": "mm",
+                }
+            },
+            "options": {"custom_init_args": ["port"]},
+        },
+        "init": {
+            "default_code": "Z812(name='Z812', port='', baudrate=115200, timeout=0.1, destination=0x50, source=0x01, channel=1)",
+            "obj_name": "Z812",
+            "args": {
+                "name": {
+                    "default": "Z812",
+                    "type": str,
+                    "notes": "Name of the device.",
+                },
+                "port": {"default": "COM", "type": str, "notes": "Port"},
+                "baudrate": {
+                    "default": 115200,
+                    "type": int,
+                    "notes": "Baudrate",
+                },
+                "timeout": {
+                    "default": 0.1,
+                    "type": float,
+                    "notes": "Timeout",
+                },
+                "destination": {
+                    "default": 0x50,
+                    "type": int,
+                    "notes": "",
+                },
+                "source": {
+                    "default": 0x01,
+                    "type": int,
+                    "notes": "",
+                },
+                "channel": {
+                    "default": 1,
+                    "type": int,
+                    "notes": "",
+                },
+            },
+        },
+        "commands": {
+            "Z812Connect": {
+                "default_code": "Z812Connect(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Z812",
+                        "type": str,
+                        "notes": "",
+                    }
+                },
+                "obj": Z812Connect,
+            },
+            "Z812Initialize": {
+                "default_code": "Z812Initialize(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Z812",
+                        "type": str,
+                        "notes": "",
+                    }
+                },
+                "obj": Z812Initialize,
+            },
+            "Z812Deinitialize": {
+                "default_code": "Z812Deinitialize(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Z812",
+                        "type": str,
+                        "notes": "",
+                    }
+                },
+                "obj": Z812Deinitialize,
+            },
+            "Z812EnableMotor": {
+                "default_code": "Z812EnableMotor(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Z812",
+                        "type": str,
+                        "notes": "",
+                    }
+                },
+                "obj": Z812EnableMotor,
+            },
+            "Z812DisableMotor": {
+                "default_code": "Z812DisableMotor(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Z812",
+                        "type": str,
+                        "notes": "",
+                    }
+                },
+                "obj": Z812DisableMotor,
+            },
+            "Z812MoveAbsolute": {
+                "default_code": "Z812MoveAbsolute(receiver= '', position= 0.0)",
+                "args": {
+                    "receiver": {
+                        "default": "Z812",
+                        "type": str,
+                        "notes": "",
+                    },
+                    "position": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Absolute position in mm.",
+                    },
+                },
+                "obj": Z812MoveAbsolute,
+            },
+            "Z812MoveRelative": {
+                "default_code": "Z812MoveRelative(receiver= '', distance= 0.0)",
+                "args": {
+                    "receiver": {
+                        "default": "Z812",
+                        "type": str,
+                        "notes": "",
+                    },
+                    "distance": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Relative distance in mm.",
+                    },
+                },
+                "obj": Z812MoveRelative,
             },
         },
     },
@@ -1192,7 +1339,7 @@ devices_ref_redundancy = {
         "import_device": "from devices.newport_esp301 import NewportESP301",
         "import_commands": "from commands.newport_esp301_commands import *",
         "init": {
-            "default_code": "NewportESP301(name='NewportESP301', port='', baudrate=921600, timeout=1.0, axis_list = (1,), default_speed=20.0, poll_interval=0.1)",
+            "default_code": "NewportESP301(name='NewportESP301', port='', baudrate=921600, timeout=1.0, axis_list=(1, 2, 3), default_speed=10.0, poll_interval=0.1, axis_configs={1: {'stage_model': 'ILS100CC', 'motion_type': 'linear', 'units': 'mm', 'home_mode': 'OR4', 'zero_position': 0.0, 'default_speed': 10.0}, 2: {'stage_model': 'UTS100PP', 'motion_type': 'linear', 'units': 'mm', 'home_mode': 'OR4', 'zero_position': 0.0, 'default_speed': 10.0}, 3: {'stage_model': 'PR50PP', 'motion_type': 'rotary', 'units': 'deg', 'home_mode': 'OR1', 'zero_position': 0.0, 'default_speed': 10.0}})",
             "obj_name": "NewportESP301",
             "args": {
                 "name": {
@@ -1216,12 +1363,12 @@ devices_ref_redundancy = {
                     "notes": "Timeout of the device",
                 },
                 "axis_list": {
-                    "default": (1,),
+                    "default": (1, 2, 3),
                     "type": Tuple[int, ...],
                     "notes": "List of axis numbers",
                 },
                 "default_speed": {
-                    "default": 20.0,
+                    "default": 10.0,
                     "type": float,
                     "notes": "Default speed of the device",
                 },
@@ -1229,6 +1376,15 @@ devices_ref_redundancy = {
                     "default": 0.1,
                     "type": float,
                     "notes": "Poll interval of the device",
+                },
+                "axis_configs": {
+                    "default": {
+                        1: {"stage_model": "ILS100CC", "motion_type": "linear", "units": "mm", "home_mode": "OR4", "zero_position": 0.0, "default_speed": 10.0},
+                        2: {"stage_model": "UTS100PP", "motion_type": "linear", "units": "mm", "home_mode": "OR4", "zero_position": 0.0, "default_speed": 10.0},
+                        3: {"stage_model": "PR50PP", "motion_type": "rotary", "units": "deg", "home_mode": "OR1", "zero_position": 0.0, "default_speed": 10.0},
+                    },
+                    "type": dict,
+                    "notes": "Axis-specific configuration keyed by axis number. Recommended ESP301-3N setup: axes 1 and 2 linear in mm with OR4, axis 3 rotary in deg with OR1.",
                 },
             },
         },
@@ -1317,6 +1473,273 @@ devices_ref_redundancy = {
                     },
                 },
                 "obj": NewportESP301MoveSpeedRelative,
+            },
+        },
+    },
+    "Newport94043ASolarSim": {
+        "obj": Newport94043ASolarSim,
+        "serial": True,
+        "serial_sequence": ["Newport94043ASolarSimConnect", "Newport94043ASolarSimInitialize"],
+        "import_device": "from devices.newport_94043a_solar_sim import Newport94043ASolarSim",
+        "import_commands": "from commands.newport_94043a_solar_sim_commands import *",
+        "telemetry": {
+            "parameters": {
+                "watts": {
+                    "function_name": "get_watts",
+                    "data_type": "str",
+                    "units": "W",
+                },
+                "amps": {
+                    "function_name": "get_amps",
+                    "data_type": "str",
+                    "units": "A",
+                },
+                "volts": {
+                    "function_name": "get_volts",
+                    "data_type": "str",
+                    "units": "V",
+                },
+            },
+            "options": {"custom_init_args": ["port"]},
+        },
+        "init": {
+            "default_code": "Newport94043ASolarSim(name='Newport94043ASolarSim', port='', baudrate=9600, timeout=1.0, line_terminator='\\r', lamp_hours_warning_threshold=1000.0, default_power_watts=400, max_power_watts=450)",
+            "obj_name": "Newport94043ASolarSim",
+            "args": {
+                "name": {
+                    "default": "Newport94043ASolarSim",
+                    "type": str,
+                    "notes": "Name of the device",
+                },
+                "port": {
+                    "default": "COM",
+                    "type": str,
+                    "notes": "COM port via RS-232 to USB adapter",
+                },
+                "baudrate": {
+                    "default": 9600,
+                    "type": int,
+                    "notes": "69920 RS-232 baudrate",
+                },
+                "timeout": {
+                    "default": 1.0,
+                    "type": float,
+                    "notes": "Serial timeout in seconds",
+                },
+                "line_terminator": {
+                    "default": "\r",
+                    "type": str,
+                    "notes": "Command terminator for RS-232",
+                },
+                "lamp_hours_warning_threshold": {
+                    "default": 1000.0,
+                    "type": float,
+                    "notes": "Warn during initialize when lamp hours exceed this threshold.",
+                },
+                "default_power_watts": {
+                    "default": 400,
+                    "type": int,
+                    "notes": "Default watts preset applied during initialize.",
+                },
+                "max_power_watts": {
+                    "default": 450,
+                    "type": int,
+                    "notes": "Safety ceiling for watts preset values.",
+                },
+            },
+        },
+        "commands": {
+            "Newport94043ASolarSimConnect": {
+                "default_code": "Newport94043ASolarSimConnect(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Newport94043ASolarSim",
+                        "type": str,
+                        "notes": "Name of the device",
+                    }
+                },
+                "obj": Newport94043ASolarSimConnect,
+            },
+            "Newport94043ASolarSimInitialize": {
+                "default_code": "Newport94043ASolarSimInitialize(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Newport94043ASolarSim",
+                        "type": str,
+                        "notes": "Name of the device",
+                    }
+                },
+                "obj": Newport94043ASolarSimInitialize,
+            },
+            "Newport94043ASolarSimDeinitialize": {
+                "default_code": "Newport94043ASolarSimDeinitialize(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Newport94043ASolarSim",
+                        "type": str,
+                        "notes": "Name of the device",
+                    }
+                },
+                "obj": Newport94043ASolarSimDeinitialize,
+            },
+            "Newport94043ASolarSimIdentify": {
+                "default_code": "Newport94043ASolarSimIdentify(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Newport94043ASolarSim",
+                        "type": str,
+                        "notes": "Name of the device",
+                    }
+                },
+                "obj": Newport94043ASolarSimIdentify,
+            },
+            "Newport94043ASolarSimStatusByte": {
+                "default_code": "Newport94043ASolarSimStatusByte(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Newport94043ASolarSim",
+                        "type": str,
+                        "notes": "Name of the device",
+                    }
+                },
+                "obj": Newport94043ASolarSimStatusByte,
+            },
+            "Newport94043ASolarSimEventStatus": {
+                "default_code": "Newport94043ASolarSimEventStatus(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Newport94043ASolarSim",
+                        "type": str,
+                        "notes": "Name of the device",
+                    }
+                },
+                "obj": Newport94043ASolarSimEventStatus,
+            },
+            "Newport94043ASolarSimLampStart": {
+                "default_code": "Newport94043ASolarSimLampStart(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Newport94043ASolarSim",
+                        "type": str,
+                        "notes": "Name of the device",
+                    }
+                },
+                "obj": Newport94043ASolarSimLampStart,
+            },
+            "Newport94043ASolarSimLampStop": {
+                "default_code": "Newport94043ASolarSimLampStop(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Newport94043ASolarSim",
+                        "type": str,
+                        "notes": "Name of the device",
+                    }
+                },
+                "obj": Newport94043ASolarSimLampStop,
+            },
+            "Newport94043ASolarSimSetPowerMode": {
+                "default_code": "Newport94043ASolarSimSetPowerMode(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Newport94043ASolarSim",
+                        "type": str,
+                        "notes": "Name of the device",
+                    }
+                },
+                "obj": Newport94043ASolarSimSetPowerMode,
+            },
+            "Newport94043ASolarSimGetAmps": {
+                "default_code": "Newport94043ASolarSimGetAmps(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Newport94043ASolarSim",
+                        "type": str,
+                        "notes": "Name of the device",
+                    }
+                },
+                "obj": Newport94043ASolarSimGetAmps,
+            },
+            "Newport94043ASolarSimGetVolts": {
+                "default_code": "Newport94043ASolarSimGetVolts(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Newport94043ASolarSim",
+                        "type": str,
+                        "notes": "Name of the device",
+                    }
+                },
+                "obj": Newport94043ASolarSimGetVolts,
+            },
+            "Newport94043ASolarSimGetWatts": {
+                "default_code": "Newport94043ASolarSimGetWatts(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Newport94043ASolarSim",
+                        "type": str,
+                        "notes": "Name of the device",
+                    }
+                },
+                "obj": Newport94043ASolarSimGetWatts,
+            },
+            "Newport94043ASolarSimGetLampHours": {
+                "default_code": "Newport94043ASolarSimGetLampHours(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Newport94043ASolarSim",
+                        "type": str,
+                        "notes": "Name of the device",
+                    }
+                },
+                "obj": Newport94043ASolarSimGetLampHours,
+            },
+            "Newport94043ASolarSimGetPowerPreset": {
+                "default_code": "Newport94043ASolarSimGetPowerPreset(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Newport94043ASolarSim",
+                        "type": str,
+                        "notes": "Name of the device",
+                    }
+                },
+                "obj": Newport94043ASolarSimGetPowerPreset,
+            },
+            "Newport94043ASolarSimGetCurrentLimit": {
+                "default_code": "Newport94043ASolarSimGetCurrentLimit(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Newport94043ASolarSim",
+                        "type": str,
+                        "notes": "Name of the device",
+                    }
+                },
+                "obj": Newport94043ASolarSimGetCurrentLimit,
+            },
+            "Newport94043ASolarSimGetPowerLimit": {
+                "default_code": "Newport94043ASolarSimGetPowerLimit(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "Newport94043ASolarSim",
+                        "type": str,
+                        "notes": "Name of the device",
+                    }
+                },
+                "obj": Newport94043ASolarSimGetPowerLimit,
+            },
+            "Newport94043ASolarSimSetPowerPreset": {
+                "default_code": "Newport94043ASolarSimSetPowerPreset(receiver= '', watts= 400)",
+                "args": {
+                    "receiver": {
+                        "default": "Newport94043ASolarSim",
+                        "type": str,
+                        "notes": "Name of the device",
+                    },
+                    "watts": {
+                        "default": 400,
+                        "type": int,
+                        "notes": "Power preset in watts. Values above 450 W are rejected.",
+                    },
+                },
+                "obj": Newport94043ASolarSimSetPowerPreset,
             },
         },
     },

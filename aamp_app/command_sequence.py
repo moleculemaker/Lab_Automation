@@ -9,7 +9,6 @@ from commands.command import Command
 from devices.device import Device
 from commands.utility_commands import LoopStartCommand, LoopEndCommand
 import inspect
-import util
 
 from bson.objectid import ObjectId
 # Representer.add_representer(ABCMeta, Representer.represent_name)
@@ -35,6 +34,12 @@ class CommandSequence:
         # self.processed_commands = []
         # self.processed_delays = []
         self.device_by_name = {}
+
+    @staticmethod
+    def _get_util_module():
+        import util
+
+        return util
 
     def add_device(self, receiver: Device) -> bool:
         """Add a device to the device list then update the device dict.
@@ -582,6 +587,7 @@ class CommandSequence:
 
     def get_clean_device_list(self):
         """Returns a list for use with the dashboard."""
+        util = self._get_util_module()
         device_list = self.get_device_names_classes().copy()
         device_list_ret = []
         for index, device in enumerate(device_list):
@@ -594,6 +600,7 @@ class CommandSequence:
 
     def get_recipe(self):
         """Returns a list for use with the dashboard."""
+        util = self._get_util_module()
         devices = []
         commands = []
         execution_options = self.execution_options
@@ -622,6 +629,7 @@ class CommandSequence:
 
     def load_from_dict(self, recipe_dict):
         """Loads a recipe from a dictionary."""
+        util = self._get_util_module()
         self.device_list = []
         self.command_list = []
         for device in recipe_dict["devices"]:
@@ -642,6 +650,7 @@ class CommandSequence:
         self.execution_options = recipe_dict["execution_options"]
 
     def add_device_from_dict(self, device_type, device_dict):
+        util = self._get_util_module()
         if not hasattr(self, 'document'):
             self.document = {
                 '_id': ObjectId(),
@@ -655,6 +664,7 @@ class CommandSequence:
         self.update_device_by_name()
 
     def add_command_from_dict(self, device_type, command_type, command_dict):
+        util = self._get_util_module()
         if device_type == "UtilityCommands":
             self.add_command(
                 util.devices_ref_redundancy[device_type]["commands"][command_type]["obj"](

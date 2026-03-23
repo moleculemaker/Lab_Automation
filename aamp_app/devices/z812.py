@@ -1,13 +1,14 @@
 from typing import Optional, Tuple
 from struct import pack, unpack
 import time
+
 from .device import SerialDevice, check_serial, check_initialized
 
 
-class LinearStage150(SerialDevice):
-    DEVICE_UNIT_SCALE = 409600
+class Z812(SerialDevice):
+    DEVICE_UNIT_SCALE = 34555
     MIN_POSITION_MM = 0.0
-    MAX_POSITION_MM = 150.0
+    MAX_POSITION_MM = 12.0
     HOME_TIMEOUT_S = 120.0
     MOVE_TIMEOUT_S = 120.0
 
@@ -16,7 +17,7 @@ class LinearStage150(SerialDevice):
         name: str,
         port: str = "COM6",
         baudrate: int = 115200,
-        timeout: float | None = 0.1,
+        timeout: Optional[float] = 0.1,
         destination: int = 0x50,
         source: int = 0x01,
         channel: int = 1,
@@ -35,7 +36,7 @@ class LinearStage150(SerialDevice):
                 return (True, "")
             if response == b"":
                 continue
-        return (False, "Response timed out while waiting for stage controller message.")
+        return (False, "Response timed out while waiting for Z812 controller message.")
 
     def _validate_position(self, position: float) -> Tuple[bool, str]:
         if position < self.MIN_POSITION_MM or position > self.MAX_POSITION_MM:
@@ -52,7 +53,7 @@ class LinearStage150(SerialDevice):
         return (True, "")
 
     def get_init_args(self) -> dict:
-        args_dict = {
+        return {
             "name": self._name,
             "port": self._port,
             "baudrate": self._baudrate,
@@ -61,7 +62,6 @@ class LinearStage150(SerialDevice):
             "source": self._source,
             "channel": self._channel,
         }
-        return args_dict
 
     def update_init_args(self, args_dict: dict):
         self._name = args_dict["name"]
@@ -80,33 +80,25 @@ class LinearStage150(SerialDevice):
         if not was_enabled:
             return (was_enabled, message)
 
-        # Home Stage; MGMSG_MOT_MOVE_HOME
-        self.ser.write(
-            pack("<HBBBB", 0x0443, self._channel, 0x00, self._destination, self._source)
-        )
-
-        # Confirm stage homed before advancing; MGMSG_MOT_MOVE_HOMED
+        self.ser.write(pack("<HBBBB", 0x0443, self._channel, 0x00, self._destination, self._source))
         was_homed, message = self._wait_for_message(pack("<H", 0x0444), self.HOME_TIMEOUT_S)
         if not was_homed:
             return (was_homed, message)
+
         self.ser.flushInput()
         self.ser.flushOutput()
-
         self._is_initialized = True
-        return (True, "Successfully initialized LTS150 by homing it.")
-        # return super().initialize()
+        return (True, "Successfully initialized Z812 by homing it.")
 
     def deinitialize(self) -> Tuple[bool, str]:
         if self.ser.is_open:
             self.set_enabled_state(False)
         self._is_initialized = False
-        return (True, "Successfully deinitialized LTS150.")
+        return (True, "Successfully deinitialized Z812.")
 
     @check_serial
     def get_enabled_state(self) -> bool:
-        self.ser.write(
-            pack("<HBBBB", 0x0211, self._channel, 0x00, self._destination, self._source)
-        )
+        self.ser.write(pack("<HBBBB", 0x0211, self._channel, 0x00, self._destination, self._source))
         response = self.ser.read(6)
         if len(response) < 4:
             return False
@@ -116,15 +108,10 @@ class LinearStage150(SerialDevice):
     @check_serial
     def set_enabled_state(self, state: bool) -> Tuple[bool, str]:
         if state:
-            self.ser.write(
-                pack("<HBBBB", 0x0210, self._channel, 0x01, self._destination, self._source)
-            )
+            self.ser.write(pack("<HBBBB", 0x0210, self._channel, 0x01, self._destination, self._source))
         else:
-            self.ser.write(
-                pack("<HBBBB", 0x0210, self._channel, 0x02, self._destination, self._source)
-            )
+            self.ser.write(pack("<HBBBB", 0x0210, self._channel, 0x02, self._destination, self._source))
         time.sleep(0.1)
-
         self.ser.flushInput()
         self.ser.flushOutput()
         self._is_enabled = state
@@ -133,17 +120,9 @@ class LinearStage150(SerialDevice):
     @check_serial
     @check_initialized
     def get_position(self) -> float:
-        self._position = 0.0
-        # MGMSG_MOT_GET_POSCOUNTER
-        self.ser.write(
-            pack("<HBBBB", 0x0411, self._channel, 0x00, self._destination, self._source)
-        )
-
-        # Read back position returns by the cube; Rx message MGMSG_MOT_GET_POSCOUNTER
-        header, chan_dent, position_dUnits = unpack("<6sHI", self.ser.read(12))
-        self._position = position_dUnits / float(self.DEVICE_UNIT_SCALE)
-
-        return self._position
+        self.ser.write(pack("<HBBBB", 0x0411, self._channel, 0x00, self._destination, self._source))
+        _, _, position_dunits = unpack("<6sHI", self.ser.read(12))
+        return position_dunits / float(self.DEVICE_UNIT_SCALE)
 
     @check_serial
     @check_initialized
@@ -152,7 +131,7 @@ class LinearStage150(SerialDevice):
         if not is_valid_position:
             return (False, message)
 
-        dUnitpos = int(self.DEVICE_UNIT_SCALE * position)
+        dunit_pos = int(self.DEVICE_UNIT_SCALE * position)
         self.ser.write(
             pack(
                 "<HBBBBHI",
@@ -162,22 +141,16 @@ class LinearStage150(SerialDevice):
                 self._destination | 0x80,
                 self._source,
                 self._channel,
-                dUnitpos,
+                dunit_pos,
             )
         )
-
-        # Confirm stage completed move before advancing; MGMSG_MOT_MOVE_COMPLETED
         was_moved, message = self._wait_for_message(pack("<H", 0x0464), self.MOVE_TIMEOUT_S)
         if not was_moved:
             return (was_moved, message)
 
         self.ser.flushInput()
         self.ser.flushOutput()
-
-        return (
-            True,
-            "Successfully moved stage to position " + str(position) + "[units].",
-        )
+        return (True, "Successfully moved Z812 to position " + str(position) + " mm.")
 
     @check_serial
     @check_initialized
@@ -187,7 +160,7 @@ class LinearStage150(SerialDevice):
         if not is_valid_position:
             return (False, message)
 
-        dUnitpos = int(self.DEVICE_UNIT_SCALE * distance)
+        dunit_pos = int(self.DEVICE_UNIT_SCALE * distance)
         self.ser.write(
             pack(
                 "<HBBBBHI",
@@ -197,19 +170,13 @@ class LinearStage150(SerialDevice):
                 self._destination | 0x80,
                 self._source,
                 self._channel,
-                dUnitpos,
+                dunit_pos,
             )
         )
-
-        # Confirm stage completed move before advancing; MGMSG_MOT_MOVE_COMPLETED
         was_moved, message = self._wait_for_message(pack("<H", 0x0464), self.MOVE_TIMEOUT_S)
         if not was_moved:
             return (was_moved, message)
 
         self.ser.flushInput()
         self.ser.flushOutput()
-
-        return (
-            True,
-            "Successfully moved stage by distance " + str(distance) + "[units].",
-        )
+        return (True, "Successfully moved Z812 by distance " + str(distance) + " mm.")

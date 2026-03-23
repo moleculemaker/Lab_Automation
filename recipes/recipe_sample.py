@@ -46,7 +46,38 @@ volume = $precursor_volume  # d: ul
 
 # configure devices
 polarizer = PolarizerServoMotor('polarizer', 'COM22')
-printer = NewportESP301('printer', 'COM6')
+printer = NewportESP301(
+    'printer',
+    'COM6',
+    axis_list=(1, 2, 3),
+    default_speed=10.0,
+    axis_configs={
+        1: {
+            'stage_model': 'ILS100CC',
+            'motion_type': 'linear',
+            'units': 'mm',
+            'home_mode': 'OR4',
+            'zero_position': 0.0,
+            'default_speed': 10.0,
+        },
+        2: {
+            'stage_model': 'UTS100PP',
+            'motion_type': 'linear',
+            'units': 'mm',
+            'home_mode': 'OR4',
+            'zero_position': 0.0,
+            'default_speed': 10.0,
+        },
+        3: {
+            'stage_model': 'PR50PP',
+            'motion_type': 'rotary',
+            'units': 'deg',
+            'home_mode': 'OR1',
+            'zero_position': 0.0,
+            'default_speed': 10.0,
+        },
+    },
+)
 arm = KinovaArm('kinova')
 heating_stage = HeatingStage('heating_stage', 'COM16',115200)
 xi = XimeaCamera('xi')
