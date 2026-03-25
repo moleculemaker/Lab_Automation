@@ -1,6 +1,7 @@
 from commands.command import Command
 from commands.utility_commands import LoopStartCommand, LoopEndCommand
 from devices.heating_stage import HeatingStage
+from devices.apis import APIS
 from devices.multi_stepper import MultiStepper
 from devices.newport_esp301 import NewportESP301
 from devices.newport_94043a_solar_sim import Newport94043ASolarSim
@@ -10,6 +11,7 @@ from devices.dummy_heater import DummyHeater
 from devices.dummy_motor import DummyMotor
 from devices.linear_stage_150 import LinearStage150
 from devices.mts50_z8 import MTS50_Z8
+from devices.p4pp import P4PP
 from devices.z812 import Z812
 from devices.keithley_2450 import Keithley2450
 from devices.mfc import MassFlowController
@@ -21,7 +23,9 @@ from devices.psd6_syringe_pump import PSD6SyringePump
 from devices.ximea_camera import XimeaCamera
 
 from commands.linear_stage_150_commands import *
+from commands.apis_commands import *
 from commands.mts50_z8_commands import *
+from commands.p4pp_commands import *
 from commands.z812_commands import *
 from commands.dummy_heater_commands import *
 from commands.dummy_motor_commands import *
@@ -202,6 +206,42 @@ heating_stage_ref = {
                 },
             },
             "obj": HeatingStageSetSetPoint,
+        },
+        "HeatingStageWaitForTemperature": {
+            "default_code": "HeatingStageWaitForTemperature(receiver= '', target= 25.0, tolerance= 1.0, timeout= 600.0, poll_interval= 1.0, hold_duration= 30.0)",
+            "args": {
+                "receiver": {
+                    "default": "Stage",
+                    "type": str,
+                    "notes": "Name of the device",
+                },
+                "target": {
+                    "default": 25.0,
+                    "type": float,
+                    "notes": "Target temperature in C",
+                },
+                "tolerance": {
+                    "default": 1.0,
+                    "type": float,
+                    "notes": "Allowed deviation in C",
+                },
+                "timeout": {
+                    "default": 600.0,
+                    "type": float,
+                    "notes": "Maximum wait time in seconds",
+                },
+                "poll_interval": {
+                    "default": 1.0,
+                    "type": float,
+                    "notes": "Polling interval in seconds",
+                },
+                "hold_duration": {
+                    "default": 30.0,
+                    "type": float,
+                    "notes": "Time in seconds that temperature must stay within tolerance",
+                },
+            },
+            "obj": HeatingStageWaitForTemperature,
         },
     },
 }
@@ -811,6 +851,524 @@ devices_ref_redundancy = {
                     },
                 },
                 "obj": Z812MoveRelative,
+            },
+        },
+    },
+    "APIS": {
+        "obj": APIS,
+        "serial": True,
+        "serial_sequence": ["APISConnect", "APISInitialize"],
+        "import_device": "from devices.apis import APIS",
+        "import_commands": "from commands.apis_commands import *",
+        "telemetry": {
+            "parameters": {
+                "polarizer_angle": {
+                    "function_name": "get_polarizer_angle",
+                    "data_type": "float",
+                    "units": "deg",
+                },
+                "sample_angle": {
+                    "function_name": "get_sample_angle",
+                    "data_type": "float",
+                    "units": "deg",
+                },
+            },
+            "options": {"custom_init_args": ["port"]},
+        },
+        "init": {
+            "default_code": "APIS(name='APIS', port='', baudrate=9600, timeout=0.5, connection_wait_s=2.0, settling_time_s=1.5, command_delay_s=0.05, max_retries=3, polarizer_stage_to_servo_ratio=1.059, sample_stage_to_servo_ratio=1.059, polarizer_stage_direction=1, sample_stage_direction=1, polarizer_servo_zero_deg=0, sample_servo_zero_deg=0, use_camera=True, camera_save_directory='data/imaging/', camera_bayer_pattern='GBRG', camera_raw_max_value=1023.0)",
+            "obj_name": "APIS",
+            "args": {
+                "name": {
+                    "default": "APIS",
+                    "type": str,
+                    "notes": "Name of the device.",
+                },
+                "port": {
+                    "default": "COM",
+                    "type": str,
+                    "notes": "Arduino serial port for APIS.",
+                },
+                "baudrate": {
+                    "default": 9600,
+                    "type": int,
+                    "notes": "APIS serial baudrate.",
+                },
+                "timeout": {
+                    "default": 0.5,
+                    "type": float,
+                    "notes": "Serial readline timeout in seconds.",
+                },
+                "connection_wait_s": {
+                    "default": 2.0,
+                    "type": float,
+                    "notes": "Time to wait for READY during connect.",
+                },
+                "settling_time_s": {
+                    "default": 1.5,
+                    "type": float,
+                    "notes": "Post-move settling time before command completion.",
+                },
+                "command_delay_s": {
+                    "default": 0.05,
+                    "type": float,
+                    "notes": "Delay between serial command transactions.",
+                },
+                "max_retries": {
+                    "default": 3,
+                    "type": int,
+                    "notes": "Retry count for serial timeouts.",
+                },
+                "polarizer_stage_to_servo_ratio": {
+                    "default": 1.059,
+                    "type": float,
+                    "notes": "Polarizer stage-to-servo calibration ratio.",
+                },
+                "sample_stage_to_servo_ratio": {
+                    "default": 1.059,
+                    "type": float,
+                    "notes": "Sample stage-to-servo calibration ratio.",
+                },
+                "polarizer_stage_direction": {
+                    "default": 1,
+                    "type": int,
+                    "notes": "Polarizer rotation sign.",
+                },
+                "sample_stage_direction": {
+                    "default": 1,
+                    "type": int,
+                    "notes": "Sample rotation sign.",
+                },
+                "polarizer_servo_zero_deg": {
+                    "default": 0,
+                    "type": int,
+                    "notes": "Polarizer servo zero offset.",
+                },
+                "sample_servo_zero_deg": {
+                    "default": 0,
+                    "type": int,
+                    "notes": "Sample servo zero offset.",
+                },
+                "use_camera": {
+                    "default": True,
+                    "type": bool,
+                    "notes": "Initialize and use the integrated Ximea camera.",
+                },
+                "camera_save_directory": {
+                    "default": "data/imaging/",
+                    "type": str,
+                    "notes": "Default save directory for APIS image outputs.",
+                },
+                "camera_bayer_pattern": {
+                    "default": "GBRG",
+                    "type": str,
+                    "notes": "Bayer pattern used when converting RAW16 data to RGB.",
+                },
+                "camera_raw_max_value": {
+                    "default": 1023.0,
+                    "type": float,
+                    "notes": "Linear scaling maximum used for RAW16 to RGB conversion.",
+                },
+            },
+        },
+        "commands": {
+            "APISConnect": {
+                "default_code": "APISConnect(receiver= '')",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""}
+                },
+                "obj": APISConnect,
+            },
+            "APISInitialize": {
+                "default_code": "APISInitialize(receiver= '')",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""}
+                },
+                "obj": APISInitialize,
+            },
+            "APISDeinitialize": {
+                "default_code": "APISDeinitialize(receiver= '')",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""}
+                },
+                "obj": APISDeinitialize,
+            },
+            "APISReset": {
+                "default_code": "APISReset(receiver= '')",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""}
+                },
+                "obj": APISReset,
+            },
+            "APISEmergencyStop": {
+                "default_code": "APISEmergencyStop(receiver= '')",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""}
+                },
+                "obj": APISEmergencyStop,
+            },
+            "APISHome": {
+                "default_code": "APISHome(receiver= '')",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""}
+                },
+                "obj": APISHome,
+            },
+            "APISRotatePolarizer": {
+                "default_code": "APISRotatePolarizer(receiver= '', angle_deg= 0.0)",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""},
+                    "angle_deg": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Target polarizer stage angle in degrees.",
+                    },
+                },
+                "obj": APISRotatePolarizer,
+            },
+            "APISRotateSample": {
+                "default_code": "APISRotateSample(receiver= '', angle_deg= 0.0)",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""},
+                    "angle_deg": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Target sample stage angle in degrees.",
+                    },
+                },
+                "obj": APISRotateSample,
+            },
+            "APISGetState": {
+                "default_code": "APISGetState(receiver= '')",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""}
+                },
+                "obj": APISGetState,
+            },
+            "APISCaptureRaw16": {
+                "default_code": "APISCaptureRaw16(receiver= '', filename=None, directory=None, exposure_time=None, gain=0.0)",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""},
+                    "filename": {"default": None, "type": str, "notes": "Output filename without extension."},
+                    "directory": {"default": None, "type": str, "notes": "Optional override save directory."},
+                    "exposure_time": {"default": None, "type": int, "notes": "Optional camera exposure in microseconds."},
+                    "gain": {"default": 0.0, "type": float, "notes": "Camera gain in dB. Default is 0."},
+                },
+                "obj": APISCaptureRaw16,
+            },
+            "APISCaptureRgb": {
+                "default_code": "APISCaptureRgb(receiver= '', filename=None, directory=None, exposure_time=None, gain=0.0)",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""},
+                    "filename": {"default": None, "type": str, "notes": "Output filename without extension."},
+                    "directory": {"default": None, "type": str, "notes": "Optional override save directory."},
+                    "exposure_time": {"default": None, "type": int, "notes": "Optional camera exposure in microseconds."},
+                    "gain": {"default": 0.0, "type": float, "notes": "Camera gain in dB. Default is 0."},
+                },
+                "obj": APISCaptureRgb,
+            },
+            "APISConvertRaw16ToRgb": {
+                "default_code": "APISConvertRaw16ToRgb(receiver= '', raw16_path='', rgb_path=None)",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""},
+                    "raw16_path": {"default": "", "type": str, "notes": "Path to the saved RAW16 TIFF file."},
+                    "rgb_path": {"default": None, "type": str, "notes": "Optional output path for the converted RGB TIFF."},
+                },
+                "obj": APISConvertRaw16ToRgb,
+            },
+        },
+    },
+    "P4PP": {
+        "obj": P4PP,
+        "serial": True,
+        "serial_sequence": ["P4PPConnect", "P4PPInitialize"],
+        "import_device": "from devices.p4pp import P4PP",
+        "import_commands": "from commands.p4pp_commands import *",
+        "telemetry": {
+            "parameters": {
+                "linear_position_mm": {
+                    "function_name": "get_linear_position_mm",
+                    "data_type": "float",
+                    "units": "mm",
+                },
+                "rotational_position_deg": {
+                    "function_name": "get_rotational_position_deg",
+                    "data_type": "float",
+                    "units": "deg",
+                },
+            },
+            "options": {"custom_init_args": ["port"]},
+        },
+        "init": {
+            "default_code": "P4PP(name='P4PP', port='', baudrate=115200, timeout=0.2, startup_delay=2.0, command_timeout=30.0, motion_timeout=60.0, home_timeout=60.0, measure_timeout=30.0, poll_interval=0.2, rotation_safety_linear_mm=45.0, measurement_resistor_ohms=681.0, save_directory='data/resistance/')",
+            "obj_name": "P4PP",
+            "args": {
+                "name": {
+                    "default": "P4PP",
+                    "type": str,
+                    "notes": "Name of the device.",
+                },
+                "port": {
+                    "default": "COM",
+                    "type": str,
+                    "notes": "Arduino serial port for the P4PP controller.",
+                },
+                "baudrate": {
+                    "default": 115200,
+                    "type": int,
+                    "notes": "P4PP serial baudrate.",
+                },
+                "timeout": {
+                    "default": 0.2,
+                    "type": float,
+                    "notes": "Serial readline timeout in seconds.",
+                },
+                "startup_delay": {
+                    "default": 2.0,
+                    "type": float,
+                    "notes": "Delay after opening serial to allow Arduino reset.",
+                },
+                "command_timeout": {
+                    "default": 30.0,
+                    "type": float,
+                    "notes": "Timeout for position refresh and other short commands.",
+                },
+                "motion_timeout": {
+                    "default": 60.0,
+                    "type": float,
+                    "notes": "Timeout for motion commands.",
+                },
+                "home_timeout": {
+                    "default": 60.0,
+                    "type": float,
+                    "notes": "Timeout for homing commands.",
+                },
+                "measure_timeout": {
+                    "default": 30.0,
+                    "type": float,
+                    "notes": "Timeout for MEASURE or MEASURE_N commands.",
+                },
+                "poll_interval": {
+                    "default": 0.2,
+                    "type": float,
+                    "notes": "Position polling interval while motion or homing is active.",
+                },
+                "rotation_safety_linear_mm": {
+                    "default": 45.0,
+                    "type": float,
+                    "notes": "Block rotational homing and moves when linear position is at or above this value in mm.",
+                },
+                "measurement_resistor_ohms": {
+                    "default": 681.0,
+                    "type": float,
+                    "notes": "Measurement resistor selection. Allowed values are 681 and 68.1 ohm.",
+                },
+                "save_directory": {
+                    "default": "data/resistance/",
+                    "type": str,
+                    "notes": "Default directory for saved resistance CSV files.",
+                },
+            },
+        },
+        "commands": {
+            "P4PPConnect": {
+                "default_code": "P4PPConnect(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "P4PP",
+                        "type": str,
+                        "notes": "",
+                    }
+                },
+                "obj": P4PPConnect,
+            },
+            "P4PPInitialize": {
+                "default_code": "P4PPInitialize(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "P4PP",
+                        "type": str,
+                        "notes": "",
+                    }
+                },
+                "obj": P4PPInitialize,
+            },
+            "P4PPDeinitialize": {
+                "default_code": "P4PPDeinitialize(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "P4PP",
+                        "type": str,
+                        "notes": "",
+                    }
+                },
+                "obj": P4PPDeinitialize,
+            },
+            "P4PPRefreshPosition": {
+                "default_code": "P4PPRefreshPosition(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "P4PP",
+                        "type": str,
+                        "notes": "",
+                    }
+                },
+                "obj": P4PPRefreshPosition,
+            },
+            "P4PPHomeLinear": {
+                "default_code": "P4PPHomeLinear(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "P4PP",
+                        "type": str,
+                        "notes": "",
+                    }
+                },
+                "obj": P4PPHomeLinear,
+            },
+            "P4PPHomeRotational": {
+                "default_code": "P4PPHomeRotational(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "P4PP",
+                        "type": str,
+                        "notes": "",
+                    }
+                },
+                "obj": P4PPHomeRotational,
+            },
+            "P4PPHomeAll": {
+                "default_code": "P4PPHomeAll(receiver= '')",
+                "args": {
+                    "receiver": {
+                        "default": "P4PP",
+                        "type": str,
+                        "notes": "",
+                    }
+                },
+                "obj": P4PPHomeAll,
+            },
+            "P4PPMoveLinearAbsolute": {
+                "default_code": "P4PPMoveLinearAbsolute(receiver= '', position_mm= 0.0)",
+                "args": {
+                    "receiver": {
+                        "default": "P4PP",
+                        "type": str,
+                        "notes": "",
+                    },
+                    "position_mm": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Absolute linear position in mm.",
+                    },
+                },
+                "obj": P4PPMoveLinearAbsolute,
+            },
+            "P4PPMoveLinearRelative": {
+                "default_code": "P4PPMoveLinearRelative(receiver= '', distance_mm= 0.0)",
+                "args": {
+                    "receiver": {
+                        "default": "P4PP",
+                        "type": str,
+                        "notes": "",
+                    },
+                    "distance_mm": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Relative linear distance in mm.",
+                    },
+                },
+                "obj": P4PPMoveLinearRelative,
+            },
+            "P4PPMoveRotationalAbsolute": {
+                "default_code": "P4PPMoveRotationalAbsolute(receiver= '', position_deg= 0.0)",
+                "args": {
+                    "receiver": {
+                        "default": "P4PP",
+                        "type": str,
+                        "notes": "",
+                    },
+                    "position_deg": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Absolute rotational position in degrees.",
+                    },
+                },
+                "obj": P4PPMoveRotationalAbsolute,
+            },
+            "P4PPMoveRotationalRelative": {
+                "default_code": "P4PPMoveRotationalRelative(receiver= '', distance_deg= 0.0)",
+                "args": {
+                    "receiver": {
+                        "default": "P4PP",
+                        "type": str,
+                        "notes": "",
+                    },
+                    "distance_deg": {
+                        "default": 0.0,
+                        "type": float,
+                        "notes": "Relative rotational distance in degrees.",
+                    },
+                },
+                "obj": P4PPMoveRotationalRelative,
+            },
+            "P4PPMeasure": {
+                "default_code": "P4PPMeasure(receiver= '', cycles= 20)",
+                "args": {
+                    "receiver": {
+                        "default": "P4PP",
+                        "type": str,
+                        "notes": "",
+                    },
+                    "cycles": {
+                        "default": 20,
+                        "type": int,
+                        "notes": "Number of measurement cycles. Uses firmware averaging when greater than 1.",
+                    },
+                },
+                "obj": P4PPMeasure,
+            },
+            "P4PPSetMeasurementResistor": {
+                "default_code": "P4PPSetMeasurementResistor(receiver= '', resistor_ohms= 681.0)",
+                "args": {
+                    "receiver": {
+                        "default": "P4PP",
+                        "type": str,
+                        "notes": "",
+                    },
+                    "resistor_ohms": {
+                        "default": 681.0,
+                        "type": float,
+                        "notes": "Measurement resistor selection. Use 681 or 68.1 ohm.",
+                    },
+                },
+                "obj": P4PPSetMeasurementResistor,
+            },
+            "P4PPSaveMeasurementCsv": {
+                "default_code": "P4PPSaveMeasurementCsv(receiver= '', sample_id=None, csv_path=None, notes=None)",
+                "args": {
+                    "receiver": {
+                        "default": "P4PP",
+                        "type": str,
+                        "notes": "",
+                    },
+                    "sample_id": {
+                        "default": None,
+                        "type": str,
+                        "notes": "Optional sample identifier for the CSV row.",
+                    },
+                    "csv_path": {
+                        "default": None,
+                        "type": str,
+                        "notes": "Optional override path. Defaults to data/resistance/p4pp_measurements.csv.",
+                    },
+                    "notes": {
+                        "default": None,
+                        "type": str,
+                        "notes": "Optional note stored with the measurement row.",
+                    },
+                },
+                "obj": P4PPSaveMeasurementCsv,
             },
         },
     },

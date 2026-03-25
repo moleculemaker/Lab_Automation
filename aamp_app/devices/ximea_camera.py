@@ -1,4 +1,5 @@
 from datetime import datetime
+import os
 from typing import Optional, Tuple, List
 
 from PIL import Image
@@ -14,6 +15,8 @@ import cv2
 # will need to figure out the method resolution order if using multiple inheritance
 class XimeaCamera(Device):
     save_directory = 'data/imaging/'
+    DEFAULT_RAW_BAYER_PATTERN = "GBRG"
+    DEFAULT_RAW_MAX_VALUE = 1023.0
 
     def __init__(self, name: str):
         super().__init__(name)
@@ -38,6 +41,14 @@ class XimeaCamera(Device):
         self.boundaryx_0 = 350
         self.boundaryx_1 = 1000
         # self.set_default_params() # done in initalize because cam is not yet open here
+
+    def get_init_args(self) -> dict:
+        return {
+            "name": self._name,
+        }
+
+    def update_init_args(self, args_dict: dict):
+        self._name = args_dict["name"]
 
     # no setter for imgdataformat at the moment
     @property
@@ -121,6 +132,173 @@ class XimeaCamera(Device):
             self._is_initialized = False
 
         return (True, "Successfully deinitialized camera, communication closed.")
+
+    def _normalize_output_path(self, directory: Optional[str], filename: Optional[str], extension: str) -> str:
+        if filename is None:
+            filename = datetime.now().strftime('%Y%m%d_%H%M%S')
+        if directory is None:
+            directory = self.save_directory
+        os.makedirs(directory, exist_ok=True)
+        if not extension.startswith("."):
+            extension = "." + extension
+        return os.path.join(directory, filename + extension)
+
+    def _capture_numpy(
+        self,
+        imgdataformat: str,
+        exposure_time: Optional[int] = None,
+        gain: Optional[float] = None,
+        invert_rgb_order: bool = False,
+    ):
+        if exposure_time is None:
+            exposure_time = self._default_exposure_time
+        if gain is None:
+            gain = self._default_gain
+
+        try:
+            self.cam.set_imgdataformat(imgdataformat)
+            self.cam.set_exposure(exposure_time)
+            self.cam.set_gain(gain)
+            img = xiapi.Image()
+            self.cam.start_acquisition()
+            self.cam.get_image(img)
+            self.cam.stop_acquisition()
+        except xiapi.Xi_error as inst:
+            raise RuntimeError("Error while getting image: " + str(inst)) from inst
+
+        return img.get_image_data_numpy(invert_rgb_order=invert_rgb_order)
+
+    @staticmethod
+    def raw16_to_rgb_array(
+        raw16: np.ndarray,
+        bayer_pattern: str = DEFAULT_RAW_BAYER_PATTERN,
+        raw_max_value: float = DEFAULT_RAW_MAX_VALUE,
+        wb_gains: Optional[Tuple[float, float, float]] = None,
+        gamma: float = 1.0,
+    ) -> np.ndarray:
+        # Match the APIS RAW16 preview conversion pipeline:
+        # demosaic with OpenCV's BGR code, apply fixed WB gains, then gamma.
+        pattern_map = {
+            "GBRG": cv2.COLOR_BAYER_GB2BGR,
+            "RGGB": cv2.COLOR_BAYER_RG2BGR,
+            "BGGR": cv2.COLOR_BAYER_BG2BGR,
+            "GRBG": cv2.COLOR_BAYER_GR2BGR,
+        }
+        pattern_key = bayer_pattern.upper()
+        if pattern_key not in pattern_map:
+            raise ValueError("Unsupported Bayer pattern: " + str(bayer_pattern))
+        if raw16.ndim != 2 or raw16.dtype != np.uint16:
+            raise ValueError("raw16_to_rgb_array expects a 2D uint16 Bayer image.")
+
+        rgb16 = cv2.cvtColor(raw16, pattern_map[pattern_key])
+        scale = float(raw_max_value) if raw_max_value and raw_max_value > 0 else float(np.max(rgb16) or 1.0)
+        rgb = rgb16.astype(np.float32) / scale
+
+        if wb_gains is not None:
+            rgb[..., 0] *= wb_gains[0]
+            rgb[..., 1] *= wb_gains[1]
+            rgb[..., 2] *= wb_gains[2]
+
+        rgb = np.clip(rgb, 0.0, 1.0)
+        if gamma and gamma > 0:
+            rgb = np.power(rgb, gamma)
+
+        rgb8 = np.clip(np.round(rgb * 255.0), 0, 255).astype(np.uint8)
+        return rgb8
+
+    @check_initialized
+    def capture_raw16(
+        self,
+        save_to_file: bool = True,
+        filename: str = None,
+        directory: str = None,
+        exposure_time: Optional[int] = None,
+        gain: float = 0.0,
+    ) -> Tuple[bool, str]:
+        try:
+            raw16 = self._capture_numpy("XI_RAW16", exposure_time=exposure_time, gain=gain, invert_rgb_order=False)
+        except RuntimeError as inst:
+            return (False, str(inst))
+
+        if save_to_file:
+            fullfilename = self._normalize_output_path(directory, filename, ".tif")
+            try:
+                if not cv2.imwrite(fullfilename, raw16):
+                    return (False, "Failed to save RAW16 image to " + fullfilename)
+            except Exception as inst:
+                return (False, "Failed to save RAW16 image: " + str(inst))
+            return (True, "Successfully saved RAW16 image to " + fullfilename)
+
+        return (True, "Successfully captured RAW16 image without saving.")
+
+    @check_initialized
+    def capture_rgb_no_correction(
+        self,
+        save_to_file: bool = True,
+        filename: str = None,
+        directory: str = None,
+        exposure_time: Optional[int] = None,
+        gain: float = 0.0,
+        bayer_pattern: str = DEFAULT_RAW_BAYER_PATTERN,
+        raw_max_value: float = DEFAULT_RAW_MAX_VALUE,
+        wb_gains: Optional[Tuple[float, float, float]] = None,
+        gamma: float = 1.0,
+    ) -> Tuple[bool, str]:
+        try:
+            raw16 = self._capture_numpy("XI_RAW16", exposure_time=exposure_time, gain=gain, invert_rgb_order=False)
+            rgb8 = self.raw16_to_rgb_array(
+                raw16,
+                bayer_pattern=bayer_pattern,
+                raw_max_value=raw_max_value,
+                wb_gains=wb_gains,
+                gamma=gamma,
+            )
+        except Exception as inst:
+            return (False, str(inst))
+
+        if save_to_file:
+            fullfilename = self._normalize_output_path(directory, filename, ".tif")
+            try:
+                if not cv2.imwrite(fullfilename, cv2.cvtColor(rgb8, cv2.COLOR_RGB2BGR)):
+                    return (False, "Failed to save RGB image to " + fullfilename)
+            except Exception as inst:
+                return (False, "Failed to save RGB image: " + str(inst))
+            return (True, "Successfully saved RGB image to " + fullfilename)
+
+        return (True, "Successfully captured RGB image without saving.")
+
+    @staticmethod
+    def convert_saved_raw16_to_rgb(
+        raw16_path: str,
+        rgb_path: Optional[str] = None,
+        bayer_pattern: str = DEFAULT_RAW_BAYER_PATTERN,
+        raw_max_value: float = DEFAULT_RAW_MAX_VALUE,
+        wb_gains: Optional[Tuple[float, float, float]] = None,
+        gamma: float = 1.0,
+    ) -> Tuple[bool, str]:
+        if rgb_path is None:
+            root, ext = os.path.splitext(raw16_path)
+            rgb_path = root + "_rgb" + (ext if ext else ".tif")
+
+        raw16 = cv2.imread(raw16_path, cv2.IMREAD_UNCHANGED)
+        if raw16 is None:
+            return (False, "Failed to read RAW16 image from " + raw16_path)
+
+        try:
+            rgb8 = XimeaCamera.raw16_to_rgb_array(
+                raw16,
+                bayer_pattern=bayer_pattern,
+                raw_max_value=raw_max_value,
+                wb_gains=wb_gains,
+                gamma=gamma,
+            )
+            os.makedirs(os.path.dirname(rgb_path) or ".", exist_ok=True)
+            if not cv2.imwrite(rgb_path, cv2.cvtColor(rgb8, cv2.COLOR_RGB2BGR)):
+                return (False, "Failed to save RGB image to " + rgb_path)
+        except Exception as inst:
+            return (False, "Failed to convert RAW16 to RGB: " + str(inst))
+
+        return (True, "Successfully converted RAW16 image to RGB: " + rgb_path)
 
     @check_initialized
     def update_background(

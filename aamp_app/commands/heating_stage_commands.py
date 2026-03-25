@@ -58,3 +58,35 @@ class HeatingStageSetSetPoint(HeatingStageParentCommand):
 
     def execute(self) -> None:
         self._result = CommandResult(*self._receiver.set_settemp(self._params['temperature']))
+
+
+class HeatingStageWaitForTemperature(HeatingStageParentCommand):
+    """Wait until the heating stage reaches the target temperature within a tolerance."""
+
+    def __init__(
+        self,
+        receiver: HeatingStage,
+        target: float,
+        tolerance: float = 1.0,
+        timeout: float = 600.0,
+        poll_interval: float = 1.0,
+        hold_duration: float = 30.0,
+        **kwargs
+    ):
+        super().__init__(receiver, **kwargs)
+        self._params['target'] = target
+        self._params['tolerance'] = tolerance
+        self._params['timeout'] = timeout
+        self._params['poll_interval'] = poll_interval
+        self._params['hold_duration'] = hold_duration
+
+    def execute(self) -> None:
+        self._result = CommandResult(
+            *self._receiver.wait_for_temperature(
+                self._params['target'],
+                self._params['tolerance'],
+                self._params['timeout'],
+                self._params['poll_interval'],
+                self._params['hold_duration'],
+            )
+        )

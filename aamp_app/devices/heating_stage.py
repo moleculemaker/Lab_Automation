@@ -1,5 +1,7 @@
 from typing import Optional, Tuple, Union
 import serial
+import time
+import re
 
 from .device import ArduinoSerialDevice, check_initialized, check_serial
 
@@ -154,8 +156,76 @@ class HeatingStage(ArduinoSerialDevice):
 
         if not has_temperature:
             return (has_temperature, "Message from device did not contain temperature.")
-        
-        return (True, float(temperature_str))
+
+        match = re.search(r"-?\d+(?:\.\d+)?", temperature_str)
+        if match is None:
+            return (False, "Could not parse temperature from message: " + str(temperature_str))
+
+        return (True, float(match.group(0)))
+
+    @check_serial
+    @check_initialized
+    def wait_for_temperature(
+        self,
+        target: float,
+        tolerance: float = 1.0,
+        timeout: Optional[float] = None,
+        poll_interval: float = 1.0,
+        hold_duration: float = 30.0,
+    ) -> Tuple[bool, str]:
+        if tolerance < 0:
+            return (False, "Tolerance must be non-negative.")
+        if poll_interval <= 0:
+            return (False, "Poll interval must be greater than zero.")
+        if hold_duration < 0:
+            return (False, "Hold duration must be non-negative.")
+
+        if timeout is None:
+            timeout = self._heating_timeout
+
+        deadline = time.time() + timeout
+        last_temp = None
+        stable_since = None
+
+        while time.time() <= deadline:
+            was_successful, current_temp = self.temperature()
+            if not was_successful:
+                return (False, str(current_temp))
+
+            last_temp = current_temp
+            if abs(current_temp - target) <= tolerance:
+                if stable_since is None:
+                    stable_since = time.time()
+                elif time.time() - stable_since >= hold_duration:
+                    return (
+                        True,
+                        "Heating stage held target temperature "
+                        + str(target)
+                        + " C within ±"
+                        + str(tolerance)
+                        + " C for "
+                        + str(hold_duration)
+                        + " s. Current temperature: "
+                        + str(current_temp)
+                        + " C.",
+                    )
+            else:
+                stable_since = None
+
+            time.sleep(poll_interval)
+
+        return (
+            False,
+            "Heating stage failed to reach target temperature "
+            + str(target)
+            + " C and hold it within ±"
+            + str(tolerance)
+            + " C for "
+            + str(hold_duration)
+            + " s within timeout. Last measured temperature: "
+            + str(last_temp)
+            + " C.",
+        )
 
 
 
