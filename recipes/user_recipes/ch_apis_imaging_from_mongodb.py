@@ -71,17 +71,18 @@ def fetch_parameter_set(mongo, campaign_name, batch_no, sample_no):
     return campaign_doc, set_doc
 
 
-def build_sample_params(batch_no, sample_no, set_doc):
+def build_set_params(batch_no, sample_no, set_doc):
     return {
-        "polymer": set_doc["polymer_name"],
-        "round_num": batch_no,
-        "sample_num": sample_no,
+        "campaign_name": CAMPAIGN_NAME,
+        "batch_no": batch_no,
+        "sample_no": sample_no,
+        "polymer_name": set_doc["polymer_name"],
         "temperature": set_doc["temperature"],
-        "speed": float(set_doc["motor_speed"]),
-        "gap": set_doc["printing_gap"],
+        "motor_speed": float(set_doc["motor_speed"]),
+        "printing_gap": set_doc["printing_gap"],
         "solvent": set_doc["solvent"],
         "concentration": set_doc["concentration"],
-        "volume": set_doc["precursor_volume"],
+        "precursor_volume": set_doc["precursor_volume"],
     }
 
 
@@ -166,18 +167,18 @@ def upload_capture_records_to_mongodb(mongo, campaign_doc, set_doc, capture_reco
 load_env()
 mongo = get_mongo()
 campaign_doc, set_doc = fetch_parameter_set(mongo, CAMPAIGN_NAME, BATCH_NO, SAMPLE_NO)
-params = build_sample_params(BATCH_NO, SAMPLE_NO, set_doc)
+params = build_set_params(BATCH_NO, SAMPLE_NO, set_doc)
 
 base_sample_name = APIS.build_sample_basename(
-    round_num=params["round_num"],
-    sample_num=params["sample_num"],
-    polymer=params["polymer"],
+    round_num=params["batch_no"],
+    sample_num=params["sample_no"],
+    polymer=params["polymer_name"],
     solvent=params["solvent"],
     concentration=params["concentration"],
-    speed=params["speed"],
+    speed=params["motor_speed"],
     temperature=params["temperature"],
-    gap=params["gap"],
-    volume=params["volume"],
+    gap=params["printing_gap"],
+    volume=params["precursor_volume"],
 )
 
 root_save_dir = os.path.join(str(ROOT_SAVE_DIR), sanitize_path_component(CAMPAIGN_NAME))
@@ -196,8 +197,8 @@ apis = APIS(
     camera_raw_max_value=1023.0,
 )
 
-xpl_dir = apis.resolve_mode_directory(root_save_dir, params["polymer"], "xpl")
-ppl_dir = apis.resolve_mode_directory(root_save_dir, params["polymer"], "ppl")
+xpl_dir = apis.resolve_mode_directory(root_save_dir, params["polymer_name"], "xpl")
+ppl_dir = apis.resolve_mode_directory(root_save_dir, params["polymer_name"], "ppl")
 capture_records = []
 
 seq = CommandSequence()

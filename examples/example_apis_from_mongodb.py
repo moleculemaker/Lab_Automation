@@ -63,8 +63,8 @@ def get_mongo_helper() -> MongoDBHelper:
 def fetch_parameter_set(
     mongo: MongoDBHelper,
     campaign_name: str,
-    round_num: int,
-    sample_num: int,
+    batch_no: int,
+    sample_no: int,
 ) -> Tuple[dict, dict]:
     campaign_doc = mongo.db["campaigns"].find_one({"campaign_name": campaign_name})
     if campaign_doc is None:
@@ -73,8 +73,8 @@ def fetch_parameter_set(
     set_doc = mongo.db["sets"].find_one(
         {
             "campaign_id": campaign_doc["_id"],
-            "batch_no": round_num,
-            "sample_no": sample_num,
+            "batch_no": batch_no,
+            "sample_no": sample_no,
         }
     )
     if set_doc is None:
@@ -83,14 +83,14 @@ def fetch_parameter_set(
                 "sample_no",
                 {
                     "campaign_id": campaign_doc["_id"],
-                    "batch_no": round_num,
+                    "batch_no": batch_no,
                 },
             )
         )
         if available_samples:
             raise LookupError(
-                f"No parameter set found for campaign='{campaign_name}', round(batch_no)={round_num}, "
-                f"sample_no={sample_num}. Available sample_no values for that round: {available_samples}"
+                f"No parameter set found for campaign='{campaign_name}', batch_no={batch_no}, "
+                f"sample_no={sample_no}. Available sample_no values for that round: {available_samples}"
             )
         available_rounds = sorted(
             mongo.db["sets"].distinct(
@@ -99,23 +99,24 @@ def fetch_parameter_set(
             )
         )
         raise LookupError(
-            f"No parameter set found for campaign='{campaign_name}', round(batch_no)={round_num}, "
-            f"sample_no={sample_num}. Available rounds(batch_no): {available_rounds}"
+            f"No parameter set found for campaign='{campaign_name}', batch_no={batch_no}, "
+            f"sample_no={sample_no}. Available rounds(batch_no): {available_rounds}"
         )
     return campaign_doc, set_doc
 
 
-def build_sample_params(round_num: int, sample_num: int, set_doc: dict) -> Dict[str, object]:
+def build_set_params(batch_no: int, sample_no: int, set_doc: dict) -> Dict[str, object]:
     return {
-        "polymer": format_display_value(set_doc["polymer_name"]),
-        "round_num": round_num,
-        "sample_num": sample_num,
+        "campaign_name": format_display_value(set_doc.get("campaign_name", "")),
+        "batch_no": batch_no,
+        "sample_no": sample_no,
+        "polymer_name": format_display_value(set_doc["polymer_name"]),
         "temperature": format_display_value(set_doc["temperature"]),
-        "speed": float(set_doc["motor_speed"]),
-        "gap": format_display_value(set_doc["printing_gap"]),
+        "motor_speed": float(set_doc["motor_speed"]),
+        "printing_gap": format_display_value(set_doc["printing_gap"]),
         "solvent": format_display_value(set_doc["solvent"]),
         "concentration": format_display_value(set_doc["concentration"]),
-        "volume": format_display_value(set_doc["precursor_volume"]),
+        "precursor_volume": format_display_value(set_doc["precursor_volume"]),
     }
 
 
@@ -227,32 +228,32 @@ def main() -> None:
     mongo = get_mongo_helper()
 
     campaign_name = input("Enter campaign name: ").strip()
-    round_num = int(input("Enter round number (MongoDB batch_no): ").strip())
-    sample_num = int(input("Enter sample number (MongoDB sample_no): ").strip())
+    batch_no = int(input("Enter batch_no: ").strip())
+    sample_no = int(input("Enter sample_no: ").strip())
 
     try:
-        campaign_doc, set_doc = fetch_parameter_set(mongo, campaign_name, round_num, sample_num)
+        campaign_doc, set_doc = fetch_parameter_set(mongo, campaign_name, batch_no, sample_no)
     except LookupError as exc:
         print(f"\nParameter lookup failed: {exc}")
         mongo.close_connection()
         return
 
-    params = build_sample_params(round_num, sample_num, set_doc)
+    params = build_set_params(batch_no, sample_no, set_doc)
 
     print("\n=== Resolved Sample Parameters ===")
     for key, value in params.items():
         print(f"{key}: {value}")
 
     base_sample_name = APIS.build_sample_basename(
-        round_num=params["round_num"],
-        sample_num=params["sample_num"],
-        polymer=params["polymer"],
+        round_num=params["batch_no"],
+        sample_num=params["sample_no"],
+        polymer=params["polymer_name"],
         solvent=params["solvent"],
         concentration=params["concentration"],
-        speed=params["speed"],
+        speed=params["motor_speed"],
         temperature=params["temperature"],
-        gap=params["gap"],
-        volume=params["volume"],
+        gap=params["printing_gap"],
+        volume=params["precursor_volume"],
     )
     root_save_dir = os.path.join(ROOT_SAVE_DIR, sanitize_path_component(campaign_name))
     print(f"\nGenerated filename prefix: {base_sample_name}")
@@ -284,8 +285,8 @@ def main() -> None:
         camera_bayer_pattern="GBRG",
         camera_raw_max_value=1023.0,
     )
-    xpl_dir = apis.resolve_mode_directory(root_save_dir, params["polymer"], "xpl")
-    ppl_dir = apis.resolve_mode_directory(root_save_dir, params["polymer"], "ppl")
+    xpl_dir = apis.resolve_mode_directory(root_save_dir, params["polymer_name"], "xpl")
+    ppl_dir = apis.resolve_mode_directory(root_save_dir, params["polymer_name"], "ppl")
 
     capture_records: List[dict] = []
     seq = CommandSequence()

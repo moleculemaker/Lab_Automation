@@ -52,39 +52,40 @@ def add_mode_capture_commands(seq, apis, mode_name, polarizer_angle, sample_angl
 
 def main() -> None:
     print("=== APIS Imaging Workflow ===")
-    print("Enter sample parameters directly to build an APIS imaging sequence.")
+    print("Enter parameter values using the MongoDB `sets` field names.")
 
-    round_input = input("Enter round number (for example: 1 or a01): ").strip()
-    sample_input = input("Enter sample number (for example: 450 or a01): ").strip()
-
-    try:
-        round_num = int(round_input)
-    except ValueError:
-        round_num = round_input
+    batch_input = input("Enter batch_no (for example: 1): ").strip()
+    sample_input = input("Enter sample_no (for example: 1): ").strip()
 
     try:
-        sample_num = int(sample_input)
+        batch_no = int(batch_input)
     except ValueError:
-        sample_num = sample_input
+        batch_no = batch_input
 
-    polymer = input("Enter polymer name (for example: PProDOT): ").strip()
+    try:
+        sample_no = int(sample_input)
+    except ValueError:
+        sample_no = sample_input
+
+    polymer_name = input("Enter polymer_name (for example: PProDOT): ").strip()
     solvent = input("Enter solvent (for example: CB): ").strip()
     concentration = int(input("Enter concentration (mg/ml): ").strip())
-    speed = float(input("Enter speed (mm/s): ").strip())
+    motor_speed = float(input("Enter motor_speed (mm/s): ").strip())
     temperature = int(input("Enter temperature (C): ").strip())
-    gap = int(input("Enter gap (um): ").strip())
-    volume = int(input("Enter volume (ul): ").strip())
+    printing_gap = int(input("Enter printing_gap (um): ").strip())
+    precursor_volume = int(input("Enter precursor_volume (ul): ").strip())
 
     params = {
-        "polymer": polymer,
-        "round_num": round_num,
-        "sample_num": sample_num,
+        "campaign_name": "demo_campaign",
+        "batch_no": batch_no,
+        "sample_no": sample_no,
+        "polymer_name": polymer_name,
         "temperature": temperature,
-        "speed": speed,
-        "gap": gap,
+        "motor_speed": motor_speed,
+        "printing_gap": printing_gap,
         "solvent": solvent,
         "concentration": concentration,
-        "volume": volume,
+        "precursor_volume": precursor_volume,
     }
 
     print("\n=== Sample Parameters ===")
@@ -92,15 +93,15 @@ def main() -> None:
         print(f"{key}: {value}")
 
     base_sample_name = APIS.build_sample_basename(
-        round_num=params["round_num"],
-        sample_num=params["sample_num"],
-        polymer=params["polymer"],
+        round_num=params["batch_no"],
+        sample_num=params["sample_no"],
+        polymer=params["polymer_name"],
         solvent=params["solvent"],
         concentration=params["concentration"],
-        speed=params["speed"],
+        speed=params["motor_speed"],
         temperature=params["temperature"],
-        gap=params["gap"],
-        volume=params["volume"],
+        gap=params["printing_gap"],
+        volume=params["precursor_volume"],
     )
     print(f"\nGenerated filename prefix: {base_sample_name}")
     print("Mode folders will use `xpl/` and `ppl/`.")
@@ -126,8 +127,8 @@ def main() -> None:
         camera_bayer_pattern="GBRG",
         camera_raw_max_value=1023.0,
     )
-    xpl_dir = apis.resolve_mode_directory(ROOT_SAVE_DIR, params["polymer"], "xpl")
-    ppl_dir = apis.resolve_mode_directory(ROOT_SAVE_DIR, params["polymer"], "ppl")
+    xpl_dir = apis.resolve_mode_directory(ROOT_SAVE_DIR, params["polymer_name"], "xpl")
+    ppl_dir = apis.resolve_mode_directory(ROOT_SAVE_DIR, params["polymer_name"], "ppl")
 
     seq = CommandSequence()
     seq.add_device(apis)
