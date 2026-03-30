@@ -2,6 +2,8 @@ from commands.command import Command
 from commands.utility_commands import LoopStartCommand, LoopEndCommand
 from devices.heating_stage import HeatingStage
 from devices.apis import APIS
+from devices.sciencetech_uhe_nl_solar_sim import SciencetechUHENLSolarSim
+from devices.stellarnet_spectrometer import StellarNetSpectrometer
 from devices.multi_stepper import MultiStepper
 from devices.newport_esp301 import NewportESP301
 from devices.newport_94043a_solar_sim import Newport94043ASolarSim
@@ -12,6 +14,9 @@ from devices.dummy_motor import DummyMotor
 from devices.linear_stage_150 import LinearStage150
 from devices.mts50_z8 import MTS50_Z8
 from devices.p4pp import P4PP
+from devices.sonicator import Sonicator
+from devices.substrate_hotel import SubstrateHotel
+from devices.substrate_dispenser import SubstrateDispenser
 from devices.z812 import Z812
 from devices.keithley_2450 import Keithley2450
 from devices.mfc import MassFlowController
@@ -24,6 +29,8 @@ from devices.ximea_camera import XimeaCamera
 
 from commands.linear_stage_150_commands import *
 from commands.apis_commands import *
+from commands.sciencetech_uhe_nl_solar_sim_commands import *
+from commands.stellarnet_spectrometer_commands import *
 from commands.mts50_z8_commands import *
 from commands.p4pp_commands import *
 from commands.z812_commands import *
@@ -37,6 +44,9 @@ from commands.utility_commands import *
 from commands.heating_stage_commands import *
 from commands.multi_stepper_commands import *
 from commands.mfc_commands import *
+from commands.sonicator_commands import *
+from commands.substrate_hotel_commands import *
+from commands.substrate_dispenser_commands import *
 from commands.sht85_sensor_commands import *
 from commands.newport_esp301_commands import *
 from commands.newport_94043a_solar_sim_commands import *
@@ -54,7 +64,10 @@ named_devices = {
     "AnnealingStage": HeatingStage,
     "MultiStepper1": MultiStepper,
     "PrinterMotorX": NewportESP301,
-    # "Spectrometer": StellarNetSpectrometer,
+    "StellarNetSpectrometer": StellarNetSpectrometer,
+    "Sonicator": Sonicator,
+    "SubstrateHotel": SubstrateHotel,
+    "SubstrateDispenser": SubstrateDispenser,
     "SampleCamera": XimeaCamera,
     "DummyHeater1": DummyHeater,
     "DummyHeater2": DummyHeater,
@@ -1789,6 +1802,243 @@ devices_ref_redundancy = {
             },
         },
     },
+    "Sonicator": {
+        "obj": Sonicator,
+        "serial": True,
+        "serial_sequence": ["SonicatorConnect", "SonicatorInitialize"],
+        "import_device": "from devices.sonicator import Sonicator",
+        "import_commands": "from commands.sonicator_commands import *",
+        "init": {
+            "default_code": "Sonicator(name='Sonicator', port='', baudrate=9600, timeout=0.5, connect_delay_s=3.0, response_timeout_s=3.0, power_probe_timeout_s=5.0, line_terminator='\\n', command_prefix='>', debug_io=False)",
+            "obj_name": "Sonicator",
+            "args": {
+                "name": {
+                    "default": "Sonicator",
+                    "type": str,
+                    "notes": "Name of the device",
+                },
+                "port": {
+                    "default": "COM",
+                    "type": str,
+                    "notes": "Port of the Arduino Uno R3 wrapper",
+                },
+                "baudrate": {
+                    "default": 9600,
+                    "type": int,
+                    "notes": "Baudrate of the device",
+                },
+                "timeout": {
+                    "default": 0.5,
+                    "type": float,
+                    "notes": "Serial readline timeout in seconds.",
+                },
+                "connect_delay_s": {
+                    "default": 3.0,
+                    "type": float,
+                    "notes": "Wait time after opening the serial port.",
+                },
+                "response_timeout_s": {
+                    "default": 3.0,
+                    "type": float,
+                    "notes": "Timeout for status, start, stop, and button commands.",
+                },
+                "power_probe_timeout_s": {
+                    "default": 5.0,
+                    "type": float,
+                    "notes": "Timeout for the intrusive power-probe command.",
+                },
+                "line_terminator": {
+                    "default": "\\n",
+                    "type": str,
+                    "notes": "Line terminator sent after each command keyword.",
+                },
+                "command_prefix": {
+                    "default": ">",
+                    "type": str,
+                    "notes": "Command header character expected by the Arduino sketch.",
+                },
+                "debug_io": {
+                    "default": False,
+                    "type": bool,
+                    "notes": "Print raw TX/RX serial traffic for debugging.",
+                },
+            },
+        },
+        "commands": {
+            "SonicatorConnect": {
+                "default_code": "SonicatorConnect(receiver= '')",
+                "args": {
+                    "receiver": {"default": "Sonicator", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SonicatorConnect,
+            },
+            "SonicatorInitialize": {
+                "default_code": "SonicatorInitialize(receiver= '')",
+                "args": {
+                    "receiver": {"default": "Sonicator", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SonicatorInitialize,
+            },
+            "SonicatorDeinitialize": {
+                "default_code": "SonicatorDeinitialize(receiver= '', reset_init_flag=True, close_serial=False)",
+                "args": {
+                    "receiver": {"default": "Sonicator", "type": str, "notes": "Name of the device"},
+                    "reset_init_flag": {"default": True, "type": bool, "notes": "Reset the initialized flag."},
+                    "close_serial": {"default": False, "type": bool, "notes": "Close the serial port after deinitialize."},
+                },
+                "obj": SonicatorDeinitialize,
+            },
+            "SonicatorGetStatus": {
+                "default_code": "SonicatorGetStatus(receiver= '')",
+                "args": {
+                    "receiver": {"default": "Sonicator", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SonicatorGetStatus,
+            },
+            "SonicatorStartSonicating": {
+                "default_code": "SonicatorStartSonicating(receiver= '')",
+                "args": {
+                    "receiver": {"default": "Sonicator", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SonicatorStartSonicating,
+            },
+            "SonicatorStopSonicating": {
+                "default_code": "SonicatorStopSonicating(receiver= '')",
+                "args": {
+                    "receiver": {"default": "Sonicator", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SonicatorStopSonicating,
+            },
+            "SonicatorPressButton": {
+                "default_code": "SonicatorPressButton(receiver= '')",
+                "args": {
+                    "receiver": {"default": "Sonicator", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SonicatorPressButton,
+            },
+            "SonicatorProbePowerConnection": {
+                "default_code": "SonicatorProbePowerConnection(receiver= '')",
+                "args": {
+                    "receiver": {"default": "Sonicator", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SonicatorProbePowerConnection,
+            },
+        },
+    },
+    "SubstrateHotel": {
+        "obj": SubstrateHotel,
+        "serial": True,
+        "serial_sequence": ["SubstrateHotelConnect", "SubstrateHotelInitialize"],
+        "import_device": "from devices.substrate_hotel import SubstrateHotel",
+        "import_commands": "from commands.substrate_hotel_commands import *",
+        "init": {
+            "default_code": "SubstrateHotel(name='SubstrateHotel', port='', baudrate=9600, timeout=1.0, connect_delay_s=5.0, ready_timeout_s=5.0, home_timeout_s=300.0, move_timeout_s=300.0)",
+            "obj_name": "SubstrateHotel",
+            "args": {
+                "name": {"default": "SubstrateHotel", "type": str, "notes": "Name of the device"},
+                "port": {"default": "COM", "type": str, "notes": "Arduino serial port"},
+                "baudrate": {"default": 9600, "type": int, "notes": "Baudrate of the Arduino controller"},
+                "timeout": {"default": 1.0, "type": float, "notes": "Serial readline timeout in seconds"},
+                "connect_delay_s": {"default": 5.0, "type": float, "notes": "Delay after opening the serial port to allow Arduino reset"},
+                "ready_timeout_s": {"default": 5.0, "type": float, "notes": "Timeout while waiting for the Arduino Ready banner"},
+                "home_timeout_s": {"default": 300.0, "type": float, "notes": "Timeout for the homing operation"},
+                "move_timeout_s": {"default": 300.0, "type": float, "notes": "Default timeout for absolute moves"},
+            },
+        },
+        "commands": {
+            "SubstrateHotelConnect": {
+                "default_code": "SubstrateHotelConnect(receiver= '')",
+                "args": {"receiver": {"default": "SubstrateHotel", "type": str, "notes": "Name of the device"}},
+                "obj": SubstrateHotelConnect,
+            },
+            "SubstrateHotelInitialize": {
+                "default_code": "SubstrateHotelInitialize(receiver= '')",
+                "args": {"receiver": {"default": "SubstrateHotel", "type": str, "notes": "Name of the device"}},
+                "obj": SubstrateHotelInitialize,
+            },
+            "SubstrateHotelDeinitialize": {
+                "default_code": "SubstrateHotelDeinitialize(receiver= '', reset_init_flag=True, close_serial=False)",
+                "args": {
+                    "receiver": {"default": "SubstrateHotel", "type": str, "notes": "Name of the device"},
+                    "reset_init_flag": {"default": True, "type": bool, "notes": "Reset the initialized flag."},
+                    "close_serial": {"default": False, "type": bool, "notes": "Close the serial port after deinitialize."},
+                },
+                "obj": SubstrateHotelDeinitialize,
+            },
+            "SubstrateHotelHome": {
+                "default_code": "SubstrateHotelHome(receiver= '')",
+                "args": {"receiver": {"default": "SubstrateHotel", "type": str, "notes": "Name of the device"}},
+                "obj": SubstrateHotelHome,
+            },
+            "SubstrateHotelMoveToPosition": {
+                "default_code": "SubstrateHotelMoveToPosition(receiver= '', position_mm=0.0, speed_mm_per_s=20.0, move_timeout=None)",
+                "args": {
+                    "receiver": {"default": "SubstrateHotel", "type": str, "notes": "Name of the device"},
+                    "position_mm": {"default": 0.0, "type": float, "notes": "Absolute target position in mm (0-430)."},
+                    "speed_mm_per_s": {"default": 20.0, "type": float, "notes": "Requested move speed in mm/s."},
+                    "move_timeout": {"default": None, "type": float, "notes": "Optional override timeout for this move."},
+                },
+                "obj": SubstrateHotelMoveToPosition,
+            },
+        },
+    },
+    "SubstrateDispenser": {
+        "obj": SubstrateDispenser,
+        "serial": True,
+        "serial_sequence": ["SubstrateDispenserConnect", "SubstrateDispenserInitialize"],
+        "import_device": "from devices.substrate_dispenser import SubstrateDispenser",
+        "import_commands": "from commands.substrate_dispenser_commands import *",
+        "init": {
+            "default_code": "SubstrateDispenser(name='SubstrateDispenser', port='', baudrate=9600, timeout=1.0, connect_delay_s=5.0, ready_timeout_s=5.0, home_timeout_s=30.0, move_timeout_s=30.0)",
+            "obj_name": "SubstrateDispenser",
+            "args": {
+                "name": {"default": "SubstrateDispenser", "type": str, "notes": "Name of the device"},
+                "port": {"default": "COM", "type": str, "notes": "Arduino serial port"},
+                "baudrate": {"default": 9600, "type": int, "notes": "Baudrate of the Arduino controller"},
+                "timeout": {"default": 1.0, "type": float, "notes": "Serial readline timeout in seconds"},
+                "connect_delay_s": {"default": 5.0, "type": float, "notes": "Delay after opening the serial port to allow Arduino reset"},
+                "ready_timeout_s": {"default": 5.0, "type": float, "notes": "Timeout while waiting for the Arduino Ready banner"},
+                "home_timeout_s": {"default": 30.0, "type": float, "notes": "Timeout for the homing operation"},
+                "move_timeout_s": {"default": 30.0, "type": float, "notes": "Default timeout for absolute moves"},
+            },
+        },
+        "commands": {
+            "SubstrateDispenserConnect": {
+                "default_code": "SubstrateDispenserConnect(receiver= '')",
+                "args": {"receiver": {"default": "SubstrateDispenser", "type": str, "notes": "Name of the device"}},
+                "obj": SubstrateDispenserConnect,
+            },
+            "SubstrateDispenserInitialize": {
+                "default_code": "SubstrateDispenserInitialize(receiver= '')",
+                "args": {"receiver": {"default": "SubstrateDispenser", "type": str, "notes": "Name of the device"}},
+                "obj": SubstrateDispenserInitialize,
+            },
+            "SubstrateDispenserDeinitialize": {
+                "default_code": "SubstrateDispenserDeinitialize(receiver= '', reset_init_flag=True, close_serial=False)",
+                "args": {
+                    "receiver": {"default": "SubstrateDispenser", "type": str, "notes": "Name of the device"},
+                    "reset_init_flag": {"default": True, "type": bool, "notes": "Reset the initialized flag."},
+                    "close_serial": {"default": False, "type": bool, "notes": "Close the serial port after deinitialize."},
+                },
+                "obj": SubstrateDispenserDeinitialize,
+            },
+            "SubstrateDispenserHome": {
+                "default_code": "SubstrateDispenserHome(receiver= '')",
+                "args": {"receiver": {"default": "SubstrateDispenser", "type": str, "notes": "Name of the device"}},
+                "obj": SubstrateDispenserHome,
+            },
+            "SubstrateDispenserMoveToPosition": {
+                "default_code": "SubstrateDispenserMoveToPosition(receiver= '', position_mm=0.0, speed_mm_per_s=20.0, move_timeout=None)",
+                "args": {
+                    "receiver": {"default": "SubstrateDispenser", "type": str, "notes": "Name of the device"},
+                    "position_mm": {"default": 0.0, "type": float, "notes": "Absolute target position in mm (0-45)."},
+                    "speed_mm_per_s": {"default": 20.0, "type": float, "notes": "Requested move speed in mm/s."},
+                    "move_timeout": {"default": None, "type": float, "notes": "Optional override timeout for this move."},
+                },
+                "obj": SubstrateDispenserMoveToPosition,
+            },
+        },
+    },
     "MassFlowController": {
         "obj": MassFlowController,
         "serial": True,
@@ -2298,6 +2548,334 @@ devices_ref_redundancy = {
                     },
                 },
                 "obj": Newport94043ASolarSimSetPowerPreset,
+            },
+        },
+    },
+    "SciencetechUHENLSolarSim": {
+        "obj": SciencetechUHENLSolarSim,
+        "serial": True,
+        "serial_sequence": ["SciencetechUHENLSolarSimConnect", "SciencetechUHENLSolarSimInitialize"],
+        "import_device": "from devices.sciencetech_uhe_nl_solar_sim import SciencetechUHENLSolarSim",
+        "import_commands": "from commands.sciencetech_uhe_nl_solar_sim_commands import *",
+        "init": {
+            "default_code": "SciencetechUHENLSolarSim(name='SciencetechUHENLSolarSim', port='', baudrate=9600, timeout=2.0, line_terminator='\\r', connect_delay_s=3.0, command_delay_s=8.0, status_timeout_s=8.0, default_current_percent=85.0, default_attenuator_percent=100, debug_io=False)",
+            "obj_name": "SciencetechUHENLSolarSim",
+            "args": {
+                "name": {
+                    "default": "SciencetechUHENLSolarSim",
+                    "type": str,
+                    "notes": "Name of the device",
+                },
+                "port": {
+                    "default": "COM",
+                    "type": str,
+                    "notes": "COM port via the UHE-NL RS-232 to USB cable",
+                },
+                "baudrate": {
+                    "default": 9600,
+                    "type": int,
+                    "notes": "Serial baudrate",
+                },
+                "timeout": {
+                    "default": 2.0,
+                    "type": float,
+                    "notes": "Serial timeout in seconds",
+                },
+                "line_terminator": {
+                    "default": "\r",
+                    "type": str,
+                    "notes": "Command line terminator",
+                },
+                "connect_delay_s": {
+                    "default": 3.0,
+                    "type": float,
+                    "notes": "Delay after opening the serial port",
+                },
+                "command_delay_s": {
+                    "default": 8.0,
+                    "type": float,
+                    "notes": "Delay after each control command before polling feedback",
+                },
+                "status_timeout_s": {
+                    "default": 8.0,
+                    "type": float,
+                    "notes": "Timeout while reading the multiline status response",
+                },
+                "default_current_percent": {
+                    "default": 85.0,
+                    "type": float,
+                    "notes": "Output percentage setpoint applied during initialize after cooling is confirmed on",
+                },
+                "default_attenuator_percent": {
+                    "default": 100,
+                    "type": int,
+                    "notes": "Attenuator transmission percentage applied during initialize",
+                },
+                "debug_io": {
+                    "default": False,
+                    "type": bool,
+                    "notes": "Print raw TX/RX serial traffic for debugging",
+                },
+            },
+        },
+        "commands": {
+            "SciencetechUHENLSolarSimConnect": {
+                "default_code": "SciencetechUHENLSolarSimConnect(receiver= '')",
+                "args": {
+                    "receiver": {"default": "SciencetechUHENLSolarSim", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SciencetechUHENLSolarSimConnect,
+            },
+            "SciencetechUHENLSolarSimInitialize": {
+                "default_code": "SciencetechUHENLSolarSimInitialize(receiver= '')",
+                "args": {
+                    "receiver": {"default": "SciencetechUHENLSolarSim", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SciencetechUHENLSolarSimInitialize,
+            },
+            "SciencetechUHENLSolarSimDeinitialize": {
+                "default_code": "SciencetechUHENLSolarSimDeinitialize(receiver= '', reset_init_flag=True, close_serial=False)",
+                "args": {
+                    "receiver": {"default": "SciencetechUHENLSolarSim", "type": str, "notes": "Name of the device"},
+                    "reset_init_flag": {"default": True, "type": bool, "notes": "Reset initialized flag"},
+                    "close_serial": {"default": False, "type": bool, "notes": "Close the serial port"},
+                },
+                "obj": SciencetechUHENLSolarSimDeinitialize,
+            },
+            "SciencetechUHENLSolarSimCloseShutter": {
+                "default_code": "SciencetechUHENLSolarSimCloseShutter(receiver= '')",
+                "args": {
+                    "receiver": {"default": "SciencetechUHENLSolarSim", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SciencetechUHENLSolarSimCloseShutter,
+            },
+            "SciencetechUHENLSolarSimOpenShutter": {
+                "default_code": "SciencetechUHENLSolarSimOpenShutter(receiver= '')",
+                "args": {
+                    "receiver": {"default": "SciencetechUHENLSolarSim", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SciencetechUHENLSolarSimOpenShutter,
+            },
+            "SciencetechUHENLSolarSimEnableCooling": {
+                "default_code": "SciencetechUHENLSolarSimEnableCooling(receiver= '')",
+                "args": {
+                    "receiver": {"default": "SciencetechUHENLSolarSim", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SciencetechUHENLSolarSimEnableCooling,
+            },
+            "SciencetechUHENLSolarSimDisableCooling": {
+                "default_code": "SciencetechUHENLSolarSimDisableCooling(receiver= '')",
+                "args": {
+                    "receiver": {"default": "SciencetechUHENLSolarSim", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SciencetechUHENLSolarSimDisableCooling,
+            },
+            "SciencetechUHENLSolarSimEnableArcLamp": {
+                "default_code": "SciencetechUHENLSolarSimEnableArcLamp(receiver= '')",
+                "args": {
+                    "receiver": {"default": "SciencetechUHENLSolarSim", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SciencetechUHENLSolarSimEnableArcLamp,
+            },
+            "SciencetechUHENLSolarSimDisableArcLamp": {
+                "default_code": "SciencetechUHENLSolarSimDisableArcLamp(receiver= '')",
+                "args": {
+                    "receiver": {"default": "SciencetechUHENLSolarSim", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SciencetechUHENLSolarSimDisableArcLamp,
+            },
+            "SciencetechUHENLSolarSimOpenAttenuator": {
+                "default_code": "SciencetechUHENLSolarSimOpenAttenuator(receiver= '')",
+                "args": {
+                    "receiver": {"default": "SciencetechUHENLSolarSim", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SciencetechUHENLSolarSimOpenAttenuator,
+            },
+            "SciencetechUHENLSolarSimSetAttenuator": {
+                "default_code": "SciencetechUHENLSolarSimSetAttenuator(receiver= '', percent=100)",
+                "args": {
+                    "receiver": {"default": "SciencetechUHENLSolarSim", "type": str, "notes": "Name of the device"},
+                    "percent": {"default": 100, "type": int, "notes": "Attenuator transmission percentage"},
+                },
+                "obj": SciencetechUHENLSolarSimSetAttenuator,
+            },
+            "SciencetechUHENLSolarSimSetCurrent": {
+                "default_code": "SciencetechUHENLSolarSimSetCurrent(receiver= '', percent=85.0)",
+                "args": {
+                    "receiver": {"default": "SciencetechUHENLSolarSim", "type": str, "notes": "Name of the device"},
+                    "percent": {"default": 85.0, "type": float, "notes": "Lamp output percentage setpoint"},
+                },
+                "obj": SciencetechUHENLSolarSimSetCurrent,
+            },
+            "SciencetechUHENLSolarSimGetStatus": {
+                "default_code": "SciencetechUHENLSolarSimGetStatus(receiver= '')",
+                "args": {
+                    "receiver": {"default": "SciencetechUHENLSolarSim", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SciencetechUHENLSolarSimGetStatus,
+            },
+            "SciencetechUHENLSolarSimGetFeedback": {
+                "default_code": "SciencetechUHENLSolarSimGetFeedback(receiver= '', feedback_type='lamp')",
+                "args": {
+                    "receiver": {"default": "SciencetechUHENLSolarSim", "type": str, "notes": "Name of the device"},
+                    "feedback_type": {"default": "lamp", "type": str, "notes": "Feedback key such as lamp, cool, shutter, attenuator, output, current, voltage, power, hours"},
+                },
+                "obj": SciencetechUHENLSolarSimGetFeedback,
+            },
+        },
+    },
+    "StellarNetSpectrometer": {
+        "obj": StellarNetSpectrometer,
+        "serial": False,
+        "serial_sequence": ["SpectrometerInitialize"],
+        "import_device": "from devices.stellarnet_spectrometer import StellarNetSpectrometer",
+        "import_commands": "from commands.stellarnet_spectrometer_commands import *",
+        "init": {
+            "default_code": "StellarNetSpectrometer(name='StellarNetSpectrometer', spec_keys=['UV-Vis'], save_directory='data/spectroscopy/', default_integration_time=(100,))",
+            "obj_name": "StellarNetSpectrometer",
+            "args": {
+                "name": {
+                    "default": "StellarNetSpectrometer",
+                    "type": str,
+                    "notes": "Name of the device",
+                },
+                "spec_keys": {
+                    "default": ["UV-Vis"],
+                    "type": list,
+                    "notes": "Declared spectrometer keys. Common values are ['UV-Vis'] or ['UV-Vis', 'NIR'].",
+                },
+                "save_directory": {
+                    "default": "data/spectroscopy/",
+                    "type": str,
+                    "notes": "Directory used when absorbance CSV files are saved.",
+                },
+                "default_integration_time": {
+                    "default": (100,),
+                    "type": tuple,
+                    "notes": "Default integration time in ms for each declared spectrometer.",
+                },
+            },
+        },
+        "commands": {
+            "SpectrometerInitialize": {
+                "default_code": "SpectrometerInitialize(receiver= '')",
+                "args": {
+                    "receiver": {"default": "StellarNetSpectrometer", "type": str, "notes": "Name of the device"}
+                },
+                "obj": SpectrometerInitialize,
+            },
+            "SpectrometerDeinitialize": {
+                "default_code": "SpectrometerDeinitialize(receiver= '', reset_init_flag=True)",
+                "args": {
+                    "receiver": {"default": "StellarNetSpectrometer", "type": str, "notes": "Name of the device"},
+                    "reset_init_flag": {"default": True, "type": bool, "notes": "Reset the initialized flag."},
+                },
+                "obj": SpectrometerDeinitialize,
+            },
+            "SpectrometerUpdateDark": {
+                "default_code": "SpectrometerUpdateDark(receiver= '', integration_times=(100,), scans_to_avg=(3,), smoothings=(0,), xtimings=(1,))",
+                "args": {
+                    "receiver": {"default": "StellarNetSpectrometer", "type": str, "notes": "Name of the device"},
+                    "integration_times": {"default": (100,), "type": tuple, "notes": "Integration times in ms for each declared spectrometer."},
+                    "scans_to_avg": {"default": (3,), "type": tuple, "notes": "Scans-to-average values for each declared spectrometer."},
+                    "smoothings": {"default": (0,), "type": tuple, "notes": "Smoothing values for each declared spectrometer."},
+                    "xtimings": {"default": (1,), "type": tuple, "notes": "X timing values for each declared spectrometer."},
+                },
+                "obj": SpectrometerUpdateDark,
+            },
+            "SpectrometerUpdateBlank": {
+                "default_code": "SpectrometerUpdateBlank(receiver= '', integration_times=(100,), scans_to_avg=(3,), smoothings=(0,), xtimings=(1,))",
+                "args": {
+                    "receiver": {"default": "StellarNetSpectrometer", "type": str, "notes": "Name of the device"},
+                    "integration_times": {"default": (100,), "type": tuple, "notes": "Integration times in ms for each declared spectrometer."},
+                    "scans_to_avg": {"default": (3,), "type": tuple, "notes": "Scans-to-average values for each declared spectrometer."},
+                    "smoothings": {"default": (0,), "type": tuple, "notes": "Smoothing values for each declared spectrometer."},
+                    "xtimings": {"default": (1,), "type": tuple, "notes": "X timing values for each declared spectrometer."},
+                },
+                "obj": SpectrometerUpdateBlank,
+            },
+            "SpectrometerAdjDefIntegrationTime": {
+                "default_code": "SpectrometerAdjDefIntegrationTime(receiver= '', scans_to_avg=(3,), smoothings=(0,), xtimings=(1,), target_max_count=52000, tolerance=2000)",
+                "args": {
+                    "receiver": {"default": "StellarNetSpectrometer", "type": str, "notes": "Name of the device"},
+                    "scans_to_avg": {"default": (3,), "type": tuple, "notes": "Scans-to-average values for each declared spectrometer."},
+                    "smoothings": {"default": (0,), "type": tuple, "notes": "Smoothing values for each declared spectrometer."},
+                    "xtimings": {"default": (1,), "type": tuple, "notes": "X timing values for each declared spectrometer."},
+                    "target_max_count": {"default": 52000, "type": int, "notes": "Target detector max count used to tune the default integration time."},
+                    "tolerance": {"default": 2000, "type": int, "notes": "Allowed deviation from the target max count."},
+                },
+                "obj": SpectrometerAdjDefIntegrationTime,
+            },
+            "SpectrometerGetAbsorbance": {
+                "default_code": "SpectrometerGetAbsorbance(receiver= '', save_to_file=True, filename=None, integration_times=(100,), scans_to_avg=(3,), smoothings=(0,), xtimings=(1,))",
+                "args": {
+                    "receiver": {"default": "StellarNetSpectrometer", "type": str, "notes": "Name of the device"},
+                    "save_to_file": {"default": True, "type": bool, "notes": "Save absorbance CSV output to the spectrometer save directory."},
+                    "filename": {"default": None, "type": str, "notes": "Optional output filename prefix. Uses a timestamp when omitted."},
+                    "integration_times": {"default": (100,), "type": tuple, "notes": "Integration times in ms for each declared spectrometer."},
+                    "scans_to_avg": {"default": (3,), "type": tuple, "notes": "Scans-to-average values for each declared spectrometer."},
+                    "smoothings": {"default": (0,), "type": tuple, "notes": "Smoothing values for each declared spectrometer."},
+                    "xtimings": {"default": (1,), "type": tuple, "notes": "X timing values for each declared spectrometer."},
+                },
+                "obj": SpectrometerGetAbsorbance,
+            },
+            "SpectrometerGetAbsorbancebyname": {
+                "default_code": "SpectrometerGetAbsorbancebyname(receiver= '', sample_name='sample', save_to_file=True, repeat_measure=False, integration_times=None, scans_to_avg=(3,), smoothings=(0,), xtimings=(1,), absorbance_threshold=0.003)",
+                "args": {
+                    "receiver": {"default": "StellarNetSpectrometer", "type": str, "notes": "Name of the device"},
+                    "sample_name": {"default": "sample", "type": str, "notes": "Sample name used to build absorbance filenames."},
+                    "save_to_file": {"default": True, "type": bool, "notes": "Save absorbance CSV output to the spectrometer save directory."},
+                    "repeat_measure": {"default": False, "type": bool, "notes": "Retained for compatibility with the older workflow."},
+                    "integration_times": {"default": None, "type": tuple, "notes": "Optional integration times in ms. Uses the device default integration time when omitted."},
+                    "scans_to_avg": {"default": (3,), "type": tuple, "notes": "Scans-to-average values for each declared spectrometer."},
+                    "smoothings": {"default": (0,), "type": tuple, "notes": "Smoothing values for each declared spectrometer."},
+                    "xtimings": {"default": (1,), "type": tuple, "notes": "X timing values for each declared spectrometer."},
+                    "absorbance_threshold": {"default": 0.003, "type": float, "notes": "Compatibility placeholder for the older repeat-measure workflow."},
+                },
+                "obj": SpectrometerGetAbsorbancebyname,
+            },
+            "SpectrometerGetPhotoncountsbyname": {
+                "default_code": "SpectrometerGetPhotoncountsbyname(receiver= '', sample_name='sample', save_to_file=True, repeat_measure=False, integration_times=None, scans_to_avg=(3,), smoothings=(0,), xtimings=(1,), absorbance_threshold=0.003)",
+                "args": {
+                    "receiver": {"default": "StellarNetSpectrometer", "type": str, "notes": "Name of the device"},
+                    "sample_name": {"default": "sample", "type": str, "notes": "Sample name used to build photon count filenames."},
+                    "save_to_file": {"default": True, "type": bool, "notes": "Save photon count CSV output to the spectrometer save directory."},
+                    "repeat_measure": {"default": False, "type": bool, "notes": "Retained for compatibility with the older workflow."},
+                    "integration_times": {"default": None, "type": tuple, "notes": "Optional integration times in ms. Uses the device default integration time when omitted."},
+                    "scans_to_avg": {"default": (3,), "type": tuple, "notes": "Scans-to-average values for each declared spectrometer."},
+                    "smoothings": {"default": (0,), "type": tuple, "notes": "Smoothing values for each declared spectrometer."},
+                    "xtimings": {"default": (1,), "type": tuple, "notes": "X timing values for each declared spectrometer."},
+                    "absorbance_threshold": {"default": 0.003, "type": float, "notes": "Compatibility placeholder for the older repeat-measure workflow."},
+                },
+                "obj": SpectrometerGetPhotoncountsbyname,
+            },
+            "SpectrometerGetSpecDecay": {
+                "default_code": "SpectrometerGetSpecDecay(receiver= '', sample_name='sample', save_to_file=True, range_start=290.0, range_end=800.0, irradiance_file='reference/am15g_spectrum.csv', Wvlgth_col_name='wavelength_nm', Irrad_col_name='irradiance_w_m2_nm', decay_threshold=0.01)",
+                "args": {
+                    "receiver": {"default": "StellarNetSpectrometer", "type": str, "notes": "Name of the device"},
+                    "sample_name": {"default": "sample", "type": str, "notes": "Sample name used to find the saved merged absorbance file."},
+                    "save_to_file": {"default": True, "type": bool, "notes": "Save the spectral decay CSV to the spectrometer save directory."},
+                    "range_start": {"default": 290.0, "type": float, "notes": "Start wavelength for spectral decay calculation."},
+                    "range_end": {"default": 800.0, "type": float, "notes": "End wavelength for spectral decay calculation."},
+                    "irradiance_file": {"default": "reference/am15g_spectrum.csv", "type": str, "notes": "Reference irradiance CSV stored relative to the spectrometer save directory."},
+                    "Wvlgth_col_name": {"default": "wavelength_nm", "type": str, "notes": "Irradiance-table wavelength column name."},
+                    "Irrad_col_name": {"default": "irradiance_w_m2_nm", "type": str, "notes": "Irradiance-table irradiance column name."},
+                    "decay_threshold": {"default": 0.01, "type": float, "notes": "Reference absorbance threshold used when computing decay indices."},
+                },
+                "obj": SpectrometerGetSpecDecay,
+            },
+            "SpectrometerPlotSpecDecaySummary": {
+                "default_code": "SpectrometerPlotSpecDecaySummary(receiver= '', sample_name='sample', range_start=290.0, range_end=800.0, save_to_file=True, output_filename=None, figure_dpi=180)",
+                "args": {
+                    "receiver": {"default": "StellarNetSpectrometer", "type": str, "notes": "Name of the device"},
+                    "sample_name": {"default": "sample", "type": str, "notes": "Sample name used to find the saved specdecay and QC files."},
+                    "range_start": {"default": 290.0, "type": float, "notes": "Start wavelength used for the absorbance snapshot panel."},
+                    "range_end": {"default": 800.0, "type": float, "notes": "End wavelength used for the absorbance snapshot panel."},
+                    "save_to_file": {"default": True, "type": bool, "notes": "Save the summary figure as PNG in the spectrometer save directory."},
+                    "output_filename": {"default": None, "type": str, "notes": "Optional output PNG filename. Relative paths are resolved against the spectrometer save directory."},
+                    "figure_dpi": {"default": 180, "type": int, "notes": "PNG export resolution."},
+                },
+                "obj": SpectrometerPlotSpecDecaySummary,
             },
         },
     },

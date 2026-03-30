@@ -288,12 +288,12 @@ class ArduinoSerialDevice(SerialDevice):
                 response_result = (response_result.decode('ascii') + temp_result.decode('ascii')).encode('ascii')
         
         if retry_count == partial_retries and "\\n" not in str(response_result):
-            return (False, "Timed out. Partial message received for potential control char or str " + control_char + ".")
+            return (False, "Timed out. Partial message received.")
 
         response_result = response_result.strip().decode('ascii')
 
         if response_result == "":
-            return (False, "Timed out. Did not receive any response for control char or str " + control_char + ".")
+            return (False, "Timed out. Did not receive any response.")
 
         return (True, response_result)
     

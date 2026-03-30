@@ -81,7 +81,11 @@ Copy this section for each device and fill it in as work starts.
 - [x] Device 2: `Z812`
 - [x] Device 3: `HeatingStage`
 - [x] Device 4: `P4PP`
-- [ ] Device 5: `TBD`
+- [x] Device 5: `Sciencetech UHE-NL`
+- [x] Device 6: `StellarNetSpectrometer`
+- [x] Device 7: `Sonicator`
+- [ ] Device 8: `SubstrateHotel`
+- [ ] Device 9: `SubstrateDispenser`
 
 #### Device: `ESP301-3N`
 
@@ -256,6 +260,230 @@ Copy this section for each device and fill it in as work starts.
 - Rotation is blocked when linear position is `>= 45.0 mm`
 - Measurement resistor selection is explicit: `681 ohm` default, `68.1 ohm` optional
 - Default measurement cycles for command metadata set to `20`
+
+#### Device: `Sciencetech UHE-NL`
+
+- Status: `done`
+- Device file: `aamp_app/devices/sciencetech_uhe_nl_solar_sim.py`
+- Command file: `aamp_app/commands/sciencetech_uhe_nl_solar_sim_commands.py`
+- Example file: `examples/example_sciencetech_uhe_nl_solar_sim.py`
+- Similar existing implementation: `to_implement/sciencetech_lamp.py`
+- Hardware or SDK dependency: `Sciencetech UHE-NL / LPC controller over RS-232`
+
+#### Scope
+
+- Add: UHE-NL power control device, commands, smoke test, and web app metadata
+- Update: safety handling for cooling and lamp sequencing
+- Not in scope: optical calibration workflow
+
+#### Required Actions
+
+- [x] Device class implemented
+- [x] Initialization path checked
+- [x] Shutdown or cleanup path checked
+- [x] Core commands implemented
+- [x] Command metadata and params reviewed
+- [x] Example added or updated
+- [x] Example executed successfully
+- [x] Logging behavior checked
+- [ ] Recipe or YAML compatibility checked
+- [ ] Web app visibility checked
+- [ ] Manual control page checked if applicable
+- [ ] Execute recipe flow checked if applicable
+- [x] Notes recorded
+
+#### Validation
+
+- Example run result: full smoke test executed locally on `COM4`
+- Web app result:
+- Known issues: controller reports `OUTPUT=0000` while the lamp is off even after a setpoint command; live output feedback becomes meaningful only after lamp ignition
+
+#### Notes
+
+- `initialize` requires the lamp to be off and enables cooling first
+- `enable_arc_lamp` refuses to run unless cooling feedback is on
+- `deinitialize` turns the lamp off when needed and intentionally leaves cooling on for cooldown
+
+#### Device: `StellarNetSpectrometer`
+
+- Status: `done`
+- Device file: `aamp_app/devices/stellarnet_spectrometer.py`
+- Command file: `aamp_app/commands/stellarnet_spectrometer_commands.py`
+- Example file: `examples/example_stellarnet_spectrometer.py`, `examples/example_uvvis_film_absorbance_degradation.py`
+- Similar existing implementation: existing StellarNet driver wrapper
+- Hardware or SDK dependency: `stellarnet_driver3` and compatible `pyusb`
+
+#### Scope
+
+- Add: calibration/smoke test example for the UV-Vis spectrometer, by-name absorbance and photon-count acquisition, spectral-decay calculation, and an ESP301-driven UV-Vis film degradation example
+- Update: driver import handling, initialization metadata, repeated-measure QC logging, and AM1.5 reference handling
+- Not in scope: automated analysis filtering based on QC validity inside the decay calculation itself
+
+#### Required Actions
+
+- [x] Device class implemented
+- [x] Initialization path checked
+- [x] Shutdown or cleanup path checked
+- [x] Core commands implemented
+- [x] Command metadata and params reviewed
+- [x] Example added or updated
+- [x] Example executed successfully
+- [x] Logging behavior checked
+- [ ] Recipe or YAML compatibility checked
+- [ ] Web app visibility checked
+- [ ] Manual control page checked if applicable
+- [ ] Execute recipe flow checked if applicable
+- [x] Notes recorded
+
+#### Validation
+
+- Example run result: local initialization succeeded with spectrometer key `UV-Vis`; manual dark/blank/sample absorbance example executed locally; spectral decay recalculation was validated against legacy `specdecay_sample` data with very high trend agreement
+- Web app result:
+- Known issues: vendor driver must be installed in the active Python environment
+
+#### Notes
+
+- `adjust_default_integration_time()` is used at the blank position and keeps the default target near `52000` counts
+- Negative absorbance is clamped to `0` and high absorbance is capped at `5`, matching the older UV-Vis workflow
+- Repeated absorbance measurements now append even when QC differences exceed threshold; validity and comparison statistics are logged separately in `sample_name_measurement_qc_log.csv`
+- Spectral decay now follows the `UVVis_Converter` method more closely:
+  - default spectral range `290-800 nm`
+  - default irradiance reference `data/spectroscopy/reference/am15g_spectrum.csv`
+  - spectral overlap computed by interpolating AM1.5 irradiance onto the measured wavelength grid and integrating with `trapz`
+- Added `example_uvvis_film_absorbance_degradation.py` for ESP301 axis-3 sample rotation with:
+  - dark measured once at startup
+  - blank measured before every sample
+  - loop count and active slots configured at the top of the example
+
+#### Device: `Sonicator`
+
+- Status: `done`
+- Device file: `aamp_app/devices/sonicator.py`
+- Command file: `aamp_app/commands/sonicator_commands.py`
+- Example file: `examples/example_sonicator.py`
+- Similar existing implementation: `to_implement/sonicator/test6/test6.ino`
+- Hardware or SDK dependency: `Arduino Uno R3 wrapper for sonicator front-panel button/status wiring`
+
+#### Scope
+
+- Add: Sonicator device, commands, example, and cleaned-up Uno firmware sketch
+- Update: web-app metadata and documentation stubs
+- Not in scope: redesigning the sonicator hardware interface board
+
+#### Required Actions
+
+- [x] Device class implemented
+- [x] Initialization path checked
+- [x] Shutdown or cleanup path checked
+- [x] Core commands implemented
+- [x] Command metadata and params reviewed
+- [x] Example added or updated
+- [x] Example executed successfully
+- [ ] Logging behavior checked
+- [ ] Recipe or YAML compatibility checked
+- [ ] Web app visibility checked
+- [ ] Manual control page checked if applicable
+- [ ] Execute recipe flow checked if applicable
+- [x] Notes recorded
+
+#### Validation
+
+- Example run result: Python smoke test executed locally on `COM13`
+- Web app result:
+- Known issues: `power` probing is intentionally treated as intrusive because it may toggle the front-panel button when the sonicator is idle
+
+#### Notes
+
+- Host-side protocol follows the final draft family in `to_implement/sonicator/test6/test6.ino`
+- Command set: `>status`, `>button`, `>power`, `>turnon`, `>turnoff`
+- Expected Uno R3 wiring is `5V`, `GND`, `D7` button drive, and `D8` status sense
+- Added a cleaned-up firmware sketch at `firmware/sonicator/sonicator_uno_r3/sonicator_uno_r3.ino`
+
+#### Device: `SubstrateHotel`
+
+- Status: `in progress`
+- Device file: `aamp_app/devices/substrate_hotel.py`
+- Command file: `aamp_app/commands/substrate_hotel_commands.py`
+- Example file: `examples/example_substrate_hotel.py`
+- Similar existing implementation: `to_implement/substratehotel/substrate_hotel.py`
+- Hardware or SDK dependency: `Arduino-based linear stage controller`
+
+#### Scope
+
+- Add: dedicated device, commands, example, and web-app metadata
+- Update: current repo to use `Connect -> Initialize -> Move/Home -> Deinitialize` style
+- Not in scope: Arduino firmware changes
+
+#### Required Actions
+
+- [x] Device class implemented
+- [ ] Initialization path checked
+- [ ] Shutdown or cleanup path checked
+- [x] Core commands implemented
+- [x] Command metadata and params reviewed
+- [x] Example added or updated
+- [ ] Example executed successfully
+- [ ] Logging behavior checked
+- [ ] Recipe or YAML compatibility checked
+- [ ] Web app visibility checked
+- [ ] Manual control page checked if applicable
+- [ ] Execute recipe flow checked if applicable
+- [x] Notes recorded
+
+#### Validation
+
+- Example run result:
+- Web app result:
+- Known issues: current repo path not hardware-smoke-tested yet
+
+#### Notes
+
+- Serial protocol inferred from old draft: Arduino emits `Ready`, homing uses `H`, and absolute motion uses `M{position},{speed}`
+- Current Python-side position guard is `0-430 mm`
+- Default homing and move timeouts are `300 s`
+
+#### Device: `SubstrateDispenser`
+
+- Status: `in progress`
+- Device file: `aamp_app/devices/substrate_dispenser.py`
+- Command file: `aamp_app/commands/substrate_dispenser_commands.py`
+- Example file: `examples/example_substrate_dispenser.py`
+- Similar existing implementation: `to_implement/substratehotel/substrate_dispenser.py`
+- Hardware or SDK dependency: `Arduino-based linear stage controller`
+
+#### Scope
+
+- Add: dedicated device, commands, example, and web-app metadata
+- Update: current repo to use `Connect -> Initialize -> Move/Home -> Deinitialize` style
+- Not in scope: Arduino firmware changes
+
+#### Required Actions
+
+- [x] Device class implemented
+- [ ] Initialization path checked
+- [ ] Shutdown or cleanup path checked
+- [x] Core commands implemented
+- [x] Command metadata and params reviewed
+- [x] Example added or updated
+- [ ] Example executed successfully
+- [ ] Logging behavior checked
+- [ ] Recipe or YAML compatibility checked
+- [ ] Web app visibility checked
+- [ ] Manual control page checked if applicable
+- [ ] Execute recipe flow checked if applicable
+- [x] Notes recorded
+
+#### Validation
+
+- Example run result:
+- Web app result:
+- Known issues: current repo path not hardware-smoke-tested yet
+
+#### Notes
+
+- Serial protocol inferred from old draft: Arduino emits `Ready`, homing uses `H`, and absolute motion uses `M{position},{speed}`
+- Current Python-side position guard is `0-45 mm`
+- Default homing and move timeouts are `30 s`
 
 ## Questions or Blockers
 
