@@ -26,6 +26,7 @@ TCP_PORT = 10000
 
 class KinovaArm(Device):
     pose_dict_file = 'robot_arm_poses.yaml'
+    safe_action_names = ("Home", "Above Fork Pickup")
     
     def __init__(
             self, 
@@ -118,40 +119,16 @@ class KinovaArm(Device):
         
     
     def home(self) -> Tuple[bool, str]:
-        # Make sure the arm is in Single Level Servoing mode
-        base_servo_mode = Base_pb2.ServoingModeInformation()
-        base_servo_mode.servoing_mode = Base_pb2.SINGLE_LEVEL_SERVOING
-        self._base.SetServoingMode(base_servo_mode)
-        
-        # Move arm to ready position
-        # print("Moving the arm to a safe position")
-        action_type = Base_pb2.RequestedActionType()
-        action_type.action_type = Base_pb2.REACH_JOINT_ANGLES
-        action_list = self._base.ReadAllActions(action_type)
-        action_handle = None
-        
-        for action in action_list.action_list:
-            # if action.name == "Home":
-            if action.name == 'Above Fork Pickup':
-                action_handle = action.handle
+        for action_name in self.safe_action_names:
+            was_successful, message = self.execute_action(action_name)
+            if was_successful:
+                return (True, message)
 
-        if action_handle is None:
-            return (False, "Can't reach safe position")
+            if not message.startswith("Did not find action of name "):
+                return (False, message)
 
-        e = threading.Event()
-        notification_handle = self._base.OnNotificationActionTopic(
-            self.check_for_end_or_abort(e),
-            Base_pb2.NotificationOptions()
-        )
-
-        self._base.ExecuteActionFromReference(action_handle)
-        finished = e.wait(self._action_timeout)
-        self._base.Unsubscribe(notification_handle)
-
-        if finished:
-            return (True, "Safe position reached")
-        else:
-            return (False, "Timeout on action notification wait")
+        action_name_str = ", ".join(self.safe_action_names)
+        return (False, "Can't reach safe position. None of these saved actions were found: " + action_name_str)
 
     def execute_action(self, action_name: str):
         # Make sure the arm is in Single Level Servoing mode
