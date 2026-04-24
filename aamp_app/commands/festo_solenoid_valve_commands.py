@@ -77,4 +77,4 @@ class FestoCloseAll(FestoParentCommand):
         super().__init__(receiver, **kwargs)
 
     def execute(self) -> None:
-        self._result = CommandResult(*self._receiver.valve)
+        self._result = CommandResult(*self._receiver.close_all())

@@ -8,6 +8,13 @@ from .device import ArduinoSerialDevice, check_initialized, check_serial
 
 
 class FestoSolenoidValve(ArduinoSerialDevice):
+    """Simple serial wrapper for an Arduino sketch that toggles Festo valve driver outputs.
+
+    The companion sketch in ``to_implement/festo_solenoid_valve_multiple/Festo_Multiple.ino``
+    maps valve 1/2/3 to Arduino pins 12/8/4 and expects single-byte commands:
+    A/B/C=open valve 1/2/3, D/E/F=close valve 1/2/3.
+    """
+
     def __init__(
         self, name: str, port: str, baudrate: int = 9600, timeout: float = 0.1
     ):
@@ -33,7 +40,8 @@ class FestoSolenoidValve(ArduinoSerialDevice):
         return (True, "Solenoid valve initialized")
 
     def deinitialize(self) -> Tuple[bool, str]:
-        self.ser.close()
+        if self.ser.is_open:
+            self.ser.close()
         self._is_initialized = False
         return (True, "Solenoid valve deinitialized")
 
@@ -51,6 +59,7 @@ class FestoSolenoidValve(ArduinoSerialDevice):
         return (True, "Solenoid valve is open")
 
     @check_serial
+    @check_initialized
     def valve_closed(self, valve_num: int) -> Tuple[bool, str]:
         if valve_num == 1:
             self.ser.write(b"D")
@@ -63,6 +72,7 @@ class FestoSolenoidValve(ArduinoSerialDevice):
         return (True, "Solenoid valve is closed")
 
     @check_serial
+    @check_initialized
     def close_all(self) -> Tuple[bool, str]:
         self.ser.write(b"D")
         time.sleep(0.25)

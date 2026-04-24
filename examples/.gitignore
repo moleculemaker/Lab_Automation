@@ -18,6 +18,7 @@
 !example_stellarnet_spectrometer.py
 !example_uvvis_film_absorbance_degradation.py
 !example_sciencetech_uhe_nl_solar_sim.py
+!example_festo_solenoid_valve.py
 !example_sonicator.py
 !example_substrate_hotel.py
 !example_substrate_dispenser.py

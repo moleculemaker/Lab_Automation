@@ -324,7 +324,7 @@ devices_ref_redundancy = {
         "import_device": "from devices.festo_solenoid_valve import FestoSolenoidValve",
         "import_commands": "from commands.festo_solenoid_valve_commands import *",
         "init": {
-            "default_code": "FestoSolenoidValve(name='FestoSolenoidValve', numchannel=, port='COM5', baudrate=9600, timeout=0.1)",
+            "default_code": "FestoSolenoidValve(name='FestoSolenoidValve', port='COM5', baudrate=9600, timeout=0.1)",
             "obj_name": "FestoSolenoidValve",
             "args": {
                 "name": {
@@ -389,23 +389,33 @@ devices_ref_redundancy = {
                 "obj": FestoDeinitialize,
             },
             "FestoValveOpen": {
-                "default_code": "FestoValveOpen(receiver= '')",
+                "default_code": "FestoValveOpen(receiver= '', valve_num=1)",
                 "args": {
                     "receiver": {
                         "default": "FestoSolenoidValve",
                         "type": str,
                         "notes": "Name of the device",
                     },
+                    "valve_num": {
+                        "default": 1,
+                        "type": int,
+                        "notes": "Valve number to open. Arduino sketch maps 1/2/3 to pins 12/8/4.",
+                    },
                 },
                 "obj": FestoValveOpen,
             },
             "FestoValveClosed": {
-                "default_code": "FestoValveClosed(receiver= '')",
+                "default_code": "FestoValveClosed(receiver= '', valve_num=1)",
                 "args": {
                     "receiver": {
                         "default": "FestoSolenoidValve",
                         "type": str,
                         "notes": "Name of the device",
+                    },
+                    "valve_num": {
+                        "default": 1,
+                        "type": int,
+                        "notes": "Valve number to close. Arduino sketch maps 1/2/3 to pins 12/8/4.",
                     },
                 },
                 "obj": FestoValveClosed,
