@@ -106,6 +106,46 @@ class StellarNetSpectrometer(Device):
         return float(np.trapezoid(y_values, x_values))
 
     @staticmethod
+    def _compute_decay_metrics_with_spacing(
+        wavelength_values: np.ndarray,
+        reference_absorbance: np.ndarray,
+        current_absorbance: np.ndarray,
+        decay_threshold: float,
+    ) -> Tuple[float, float, float, float]:
+        valid_mask = (
+            np.isfinite(wavelength_values)
+            & np.isfinite(reference_absorbance)
+            & np.isfinite(current_absorbance)
+            & (reference_absorbance > decay_threshold)
+        )
+        if np.count_nonzero(valid_mask) < 2:
+            return (0.0, 0.0, 0.0, 0.0)
+
+        x_valid = wavelength_values[valid_mask]
+        reference_valid = np.maximum(reference_absorbance[valid_mask], 0.0)
+        current_valid = np.nan_to_num(current_absorbance[valid_mask], nan=0.0, posinf=0.0, neginf=0.0)
+        signed_delta = current_valid - reference_valid
+
+        norm = StellarNetSpectrometer._trapz(x_valid, reference_valid)
+        if norm <= 0:
+            return (0.0, 0.0, 0.0, 0.0)
+
+        magnitude = np.abs(signed_delta)
+        positive = np.maximum(signed_delta, 0.0)
+        negative_abs = np.maximum(-signed_delta, 0.0)
+
+        decay_mag = StellarNetSpectrometer._trapz(x_valid, magnitude) / norm
+        decay_signed = StellarNetSpectrometer._trapz(x_valid, signed_delta) / norm
+        decay_positive = StellarNetSpectrometer._trapz(x_valid, positive) / norm
+        decay_negative_abs = StellarNetSpectrometer._trapz(x_valid, negative_abs) / norm
+        return (
+            float(decay_mag),
+            float(decay_signed),
+            float(decay_positive),
+            float(decay_negative_abs),
+        )
+
+    @staticmethod
     def _parse_elapsed_seconds_from_columns(columns: List[str]) -> np.ndarray:
         elapsed_seconds = []
         for column_name in columns:
@@ -965,28 +1005,23 @@ class StellarNetSpectrometer(Device):
         overlap_delta_vs_t0 = overlap_percent - baseline_overlap
         overlap_abs_change_vs_t0 = np.abs(retention_percent - 100.0)
 
-        reference = original_absorbance.copy()
-        positive_reference = np.where(reference > decay_threshold, np.maximum(reference, 0.0), 0.0)
-        norm = float(np.sum(positive_reference))
-        if norm <= 0:
-            norm = 1.0
-
         decay_mag = np.zeros(decayed_absorbance.shape[1], dtype=float)
         decay_signed = np.zeros(decayed_absorbance.shape[1], dtype=float)
         decay_positive = np.zeros(decayed_absorbance.shape[1], dtype=float)
         decay_negative_abs = np.zeros(decayed_absorbance.shape[1], dtype=float)
 
         for idx in range(decayed_absorbance.shape[1]):
-            current = decayed_absorbance[:, idx]
-            valid_reference = np.where(reference > decay_threshold, reference, 0.0)
-            current_valid = np.where(reference > decay_threshold, np.nan_to_num(current, nan=0.0), 0.0)
-            signed = (current_valid - valid_reference) / norm
-            magnitude = np.abs(valid_reference - current_valid) / norm
-
-            decay_mag[idx] = float(np.sum(magnitude))
-            decay_signed[idx] = float(np.sum(signed))
-            decay_positive[idx] = float(np.sum(np.maximum(signed, 0.0)))
-            decay_negative_abs[idx] = float(np.sum(np.maximum(-signed, 0.0)))
+            (
+                decay_mag[idx],
+                decay_signed[idx],
+                decay_positive[idx],
+                decay_negative_abs[idx],
+            ) = self._compute_decay_metrics_with_spacing(
+                wavelength_list_inrange,
+                original_absorbance,
+                decayed_absorbance[:, idx],
+                decay_threshold,
+            )
 
         t80_h = self._interpolate_crossing_time(elapsed_hours, decay_mag, 0.20)
 
@@ -1010,7 +1045,7 @@ class StellarNetSpectrometer(Device):
                 "# end at = " + str(range_end) + "\n",
                 "# irradiance_file = " + str(irradiance_file) + "\n",
                 "# decay_threshold = " + str(decay_threshold) + "\n",
-                "# methodology = UVVis_Converter style overlap/interpolate/trapz and decay index summary\n",
+                "# methodology = UVVis_Converter style overlap/interpolate/trapz and decay index summary with wavelength-spacing weighting\n",
             ]
             with open(new_filename, 'w') as file:
                 file.writelines(comment)
