@@ -899,7 +899,7 @@ devices_ref_redundancy = {
             "options": {"custom_init_args": ["port"]},
         },
         "init": {
-            "default_code": "APIS(name='APIS', port='', baudrate=9600, timeout=0.5, connection_wait_s=2.0, settling_time_s=1.5, command_delay_s=0.05, max_retries=3, polarizer_stage_to_servo_ratio=1.059, sample_stage_to_servo_ratio=1.059, polarizer_stage_direction=1, sample_stage_direction=1, polarizer_servo_zero_deg=0, sample_servo_zero_deg=0, use_camera=True, camera_save_directory='data/imaging/', camera_bayer_pattern='GBRG', camera_raw_max_value=1023.0)",
+            "default_code": "APIS(name='APIS', port='', baudrate=9600, timeout=0.5, connection_wait_s=2.0, settling_time_s=1.5, command_delay_s=0.05, max_retries=3, polarizer_stage_to_servo_ratio=1.059, sample_stage_to_servo_ratio=1.059, polarizer_stage_direction=1, sample_stage_direction=1, polarizer_servo_zero_deg=0, sample_servo_zero_deg=0, use_camera=True, camera_save_directory='data/imaging/', camera_bayer_pattern='GBRG', camera_raw_max_value=1023.0, polarizer_baseline_path=None)",
             "obj_name": "APIS",
             "args": {
                 "name": {
@@ -992,6 +992,11 @@ devices_ref_redundancy = {
                     "type": float,
                     "notes": "Linear scaling maximum used for RAW16 to RGB conversion.",
                 },
+                "polarizer_baseline_path": {
+                    "default": None,
+                    "type": str,
+                    "notes": "Optional path for persisted XPL/PPL polarizer baseline JSON.",
+                },
             },
         },
         "commands": {
@@ -1061,6 +1066,57 @@ devices_ref_redundancy = {
                 },
                 "obj": APISRotateSample,
             },
+            "APISSetPolarizerBaseline": {
+                "default_code": "APISSetPolarizerBaseline(receiver= '', xpl_angle_deg= 120.0, persist=False, source='manual')",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""},
+                    "xpl_angle_deg": {
+                        "default": 120.0,
+                        "type": float,
+                        "notes": "XPL polarizer angle; PPL is derived as the reachable orthogonal angle.",
+                    },
+                    "persist": {
+                        "default": False,
+                        "type": bool,
+                        "notes": "Save the resulting XPL/PPL baseline to JSON.",
+                    },
+                    "source": {
+                        "default": "manual",
+                        "type": str,
+                        "notes": "Source label stored in the baseline JSON when persist is enabled.",
+                    },
+                },
+                "obj": APISSetPolarizerBaseline,
+            },
+            "APISLoadPolarizerBaseline": {
+                "default_code": "APISLoadPolarizerBaseline(receiver= '')",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""}
+                },
+                "obj": APISLoadPolarizerBaseline,
+            },
+            "APISSavePolarizerBaseline": {
+                "default_code": "APISSavePolarizerBaseline(receiver= '', source='manual')",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""},
+                    "source": {"default": "manual", "type": str, "notes": "Source label stored in baseline JSON."},
+                },
+                "obj": APISSavePolarizerBaseline,
+            },
+            "APISRotateXPL": {
+                "default_code": "APISRotateXPL(receiver= '')",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""}
+                },
+                "obj": APISRotateXPL,
+            },
+            "APISRotatePPL": {
+                "default_code": "APISRotatePPL(receiver= '')",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""}
+                },
+                "obj": APISRotatePPL,
+            },
             "APISGetState": {
                 "default_code": "APISGetState(receiver= '')",
                 "args": {
@@ -1098,6 +1154,38 @@ devices_ref_redundancy = {
                     "rgb_path": {"default": None, "type": str, "notes": "Optional output path for the converted RGB TIFF."},
                 },
                 "obj": APISConvertRaw16ToRgb,
+            },
+            "APISRunImagingSequence": {
+                "default_code": "APISRunImagingSequence(receiver= '', sample_id='sample', directory=None, sample_angles=None, xpl_exposure_time=400000, ppl_exposure_time=18000, do_xpl=True, do_ppl=True, xpl_polarizer_angle=None, ppl_polarizer_angle=None, gain=0.0)",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""},
+                    "sample_id": {"default": "sample", "type": str, "notes": "Sample ID used for output folder and filenames."},
+                    "directory": {"default": None, "type": str, "notes": "Optional output root directory."},
+                    "sample_angles": {"default": None, "type": list, "notes": "Sample angles, or None for APIS default sequence."},
+                    "xpl_exposure_time": {"default": 400000, "type": int, "notes": "XPL exposure in microseconds."},
+                    "ppl_exposure_time": {"default": 18000, "type": int, "notes": "PPL exposure in microseconds."},
+                    "do_xpl": {"default": True, "type": bool, "notes": "Capture XPL mode."},
+                    "do_ppl": {"default": True, "type": bool, "notes": "Capture PPL mode."},
+                    "xpl_polarizer_angle": {"default": None, "type": float, "notes": "Optional XPL polarizer angle override."},
+                    "ppl_polarizer_angle": {"default": None, "type": float, "notes": "Optional PPL polarizer angle override."},
+                    "gain": {"default": 0.0, "type": float, "notes": "Camera gain in dB."},
+                },
+                "obj": APISRunImagingSequence,
+            },
+            "APISRunPolarizerCalibration": {
+                "default_code": "APISRunPolarizerCalibration(receiver= '', sample_id='polarizer_calibration', directory=None, exposure_time=200000, polarizer_angles=None, sample_angle=0.0, fine_radius_deg=10, fine_step_deg=1, gain=0.0)",
+                "args": {
+                    "receiver": {"default": "APIS", "type": str, "notes": ""},
+                    "sample_id": {"default": "polarizer_calibration", "type": str, "notes": "Calibration sample ID used in output filenames."},
+                    "directory": {"default": None, "type": str, "notes": "Optional calibration output root."},
+                    "exposure_time": {"default": 200000, "type": int, "notes": "Calibration exposure in microseconds."},
+                    "polarizer_angles": {"default": None, "type": list, "notes": "Coarse scan angles, or None for 0:max:5."},
+                    "sample_angle": {"default": 0.0, "type": float, "notes": "Sample stage angle during calibration."},
+                    "fine_radius_deg": {"default": 10, "type": int, "notes": "Fine scan radius around the darkest coarse angle."},
+                    "fine_step_deg": {"default": 1, "type": int, "notes": "Fine scan angle step."},
+                    "gain": {"default": 0.0, "type": float, "notes": "Camera gain in dB."},
+                },
+                "obj": APISRunPolarizerCalibration,
             },
         },
     },
