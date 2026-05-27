@@ -25,14 +25,15 @@ from .device import Device, check_initialized
 # type hint the static methods?
 
 class StellarNetSpectrometer(Device):
+    SUPPORTED_SPEC_KEYS = ("UV-Vis", "NIR")
     save_directory = 'data/spectroscopy/'
 
     def __init__(
             self,
             name: str,
-            spec_keys: List[str] = ['UV-Vis', 'NIR'],
+            spec_keys: Union[str, List[str], Tuple[str, ...]] = ("UV-Vis",),
             save_directory: str = save_directory,
-            default_integration_time: Optional[Tuple[int, ...]] = None):
+            default_integration_time: Optional[Union[int, List[int], Tuple[int, ...]]] = None):
         super().__init__(name)
         self.spectrometer_dict = {}
         self.wavelength_dict = {}
@@ -42,12 +43,13 @@ class StellarNetSpectrometer(Device):
         self.photoncounts_dict = {}
         self.merged_absorbance = None
         self.num_spectrometers = 0
-        self.spec_keys = spec_keys
+        self.spec_keys = self._normalize_spec_keys(spec_keys)
         self.save_directory = save_directory
-        if default_integration_time is None:
-            self.default_integration_time = tuple(100 for _ in self.spec_keys)
-        else:
-            self.default_integration_time = tuple(default_integration_time)
+        self.default_integration_time = self._normalize_detector_setting(
+            default_integration_time,
+            "default_integration_time",
+            default_value=100,
+        )
 
     def get_init_args(self) -> dict:
         return {
@@ -59,9 +61,89 @@ class StellarNetSpectrometer(Device):
 
     def update_init_args(self, args_dict: dict):
         self._name = args_dict["name"]
-        self.spec_keys = args_dict["spec_keys"]
+        self.spec_keys = self._normalize_spec_keys(args_dict["spec_keys"])
         self.save_directory = args_dict["save_directory"]
-        self.default_integration_time = tuple(args_dict.get("default_integration_time", tuple(100 for _ in self.spec_keys)))
+        self.default_integration_time = self._normalize_detector_setting(
+            args_dict.get("default_integration_time"),
+            "default_integration_time",
+            default_value=100,
+        )
+
+    @classmethod
+    def _normalize_spec_keys(
+        cls,
+        spec_keys: Union[str, List[str], Tuple[str, ...], None],
+    ) -> Tuple[str, ...]:
+        if spec_keys is None:
+            spec_keys = ("UV-Vis",)
+        elif isinstance(spec_keys, str):
+            spec_keys = (spec_keys,)
+
+        normalized = []
+        for spec_key in spec_keys:
+            cleaned_key = str(spec_key).strip().rstrip(",")
+            if cleaned_key not in cls.SUPPORTED_SPEC_KEYS:
+                raise ValueError(
+                    "Unsupported spectrometer key: "
+                    + cleaned_key
+                    + ". Supported keys: "
+                    + ", ".join(cls.SUPPORTED_SPEC_KEYS)
+                )
+            if cleaned_key not in normalized:
+                normalized.append(cleaned_key)
+
+        if not normalized:
+            raise ValueError("At least one spectrometer key must be selected.")
+        return tuple(normalized)
+
+    def _normalize_detector_setting(
+        self,
+        values: Optional[Union[int, float, List[Union[int, float]], Tuple[Union[int, float], ...]]],
+        value_name: str,
+        default_value: int,
+    ) -> Tuple[int, ...]:
+        if values is None:
+            return tuple(default_value for _ in self.spec_keys)
+
+        if isinstance(values, (int, float, np.integer, np.floating)):
+            normalized_values = [values] * len(self.spec_keys)
+        elif isinstance(values, str):
+            normalized_values = [values] * len(self.spec_keys)
+        else:
+            normalized_values = list(values)
+            if not normalized_values:
+                raise ValueError(value_name + " cannot be empty.")
+            if len(normalized_values) == 1:
+                normalized_values = normalized_values * len(self.spec_keys)
+            elif len(normalized_values) < len(self.spec_keys):
+                raise ValueError(
+                    value_name
+                    + " must provide at least "
+                    + str(len(self.spec_keys))
+                    + " values for spec_keys "
+                    + str(list(self.spec_keys))
+                    + "."
+                )
+            elif len(normalized_values) > len(self.spec_keys):
+                normalized_values = normalized_values[:len(self.spec_keys)]
+
+        return tuple(int(value) for value in normalized_values)
+
+    def _normalize_measurement_settings(
+        self,
+        integration_times: Optional[Union[int, List[int], Tuple[int, ...]]] = None,
+        scans_to_avg: Union[int, List[int], Tuple[int, ...]] = (3, 3),
+        smoothings: Union[int, List[int], Tuple[int, ...]] = (0, 0),
+        xtimings: Union[int, List[int], Tuple[int, ...]] = (1, 1),
+    ) -> Tuple[Tuple[int, ...], Tuple[int, ...], Tuple[int, ...], Tuple[int, ...]]:
+        if integration_times is None:
+            integration_times = self.default_integration_time
+        return (
+            self._normalize_detector_setting(integration_times, "integration_times", default_value=100),
+            self._normalize_detector_setting(scans_to_avg, "scans_to_avg", default_value=3),
+            self._normalize_detector_setting(smoothings, "smoothings", default_value=0),
+            self._normalize_detector_setting(xtimings, "xtimings", default_value=1),
+        )
 
     def find_file(self, dir_path: str, substr: str, substr2: str) -> Optional[str]:
         if not os.path.isdir(dir_path):
@@ -263,30 +345,56 @@ class StellarNetSpectrometer(Device):
                 + "Add the vendor driver file and Python USB dependency referenced in README before using StellarNetSpectrometer.",
             )
 
-        self.num_spectrometers = self.num_specs_connected()
-        if self.num_spectrometers == 0:
+        connected_spectrometers = self.num_specs_connected()
+        if connected_spectrometers == 0:
             self._is_initialized = False
             return (False, "There are no spectrometers connected")
 
-        for ndx in range(self.num_spectrometers):
+        detected_spectrometer_dict = {}
+        detected_wavelength_dict = {}
+        for ndx in range(connected_spectrometers):
             spectrometer, wavelengths = sn.array_get_spec(ndx)
             if wavelengths[0] < 200.0:
                 # UV-VIS
-                self.spectrometer_dict['UV-Vis'] = spectrometer
-                self.wavelength_dict['UV-Vis'] = wavelengths
+                detected_spectrometer_dict['UV-Vis'] = spectrometer
+                detected_wavelength_dict['UV-Vis'] = wavelengths
             else:
                 # NIR
-                self.spectrometer_dict['NIR'] = spectrometer
-                self.wavelength_dict['NIR'] = wavelengths
+                detected_spectrometer_dict['NIR'] = spectrometer
+                detected_wavelength_dict['NIR'] = wavelengths
             # For additional spectrometers add to the if else ladder
 
-        # Check that we were able to initialize all spectrometers that were declared during construction
-        if set(self.spec_keys) == set(self.spectrometer_dict.keys()):        
+        missing_spec_keys = [
+            spec_key for spec_key in self.spec_keys if spec_key not in detected_spectrometer_dict
+        ]
+        if not missing_spec_keys:
+            self.spectrometer_dict = {
+                spec_key: detected_spectrometer_dict[spec_key] for spec_key in self.spec_keys
+            }
+            self.wavelength_dict = {
+                spec_key: detected_wavelength_dict[spec_key] for spec_key in self.spec_keys
+            }
+            self.num_spectrometers = len(self.spec_keys)
             self._is_initialized = True
-            return (True, "Successfully initialized " + str(self.num_spectrometers) + " spectrometers: " + str(list(self.spectrometer_dict.keys())))
-        else:
-            self._is_initialized = False
-            return (False, "Not all declared spectrometers were initialized. Only initialized: " + str(list(self.spectrometer_dict.keys())))
+            return (
+                True,
+                "Successfully initialized requested spectrometers: "
+                + str(list(self.spec_keys))
+                + ". Detected connected spectrometers: "
+                + str(list(detected_spectrometer_dict.keys()))
+            )
+
+        self._is_initialized = False
+        self.spectrometer_dict = detected_spectrometer_dict
+        self.wavelength_dict = detected_wavelength_dict
+        self.num_spectrometers = len(detected_spectrometer_dict)
+        return (
+            False,
+            "Not all declared spectrometers were initialized. Missing: "
+            + str(missing_spec_keys)
+            + ". Detected connected spectrometers: "
+            + str(list(detected_spectrometer_dict.keys()))
+        )
 
     def deinitialize(self, reset_init_flag: bool = True) -> Tuple[bool, str]:
         # turn off lamp?
@@ -320,9 +428,9 @@ class StellarNetSpectrometer(Device):
     @check_initialized
     def adjust_default_integration_time(
             self,
-            scans_to_avg: Tuple[int, ...] = (3, 3),
-            smoothings: Tuple[int, ...] = (0, 0),
-            xtimings: Tuple[int, ...] = (1, 1),
+            scans_to_avg: Union[int, List[int], Tuple[int, ...]] = (3, 3),
+            smoothings: Union[int, List[int], Tuple[int, ...]] = (0, 0),
+            xtimings: Union[int, List[int], Tuple[int, ...]] = (1, 1),
             target_max_count: int = 52000,
             tolerance: int = 2000,
             max_iterations: int = 8) -> Tuple[bool, str]:
@@ -330,6 +438,9 @@ class StellarNetSpectrometer(Device):
         if self.num_spectrometers != len(self.spec_keys):
             return (False, "Spectrometers are not all connected")
 
+        scans_to_avg = self._normalize_detector_setting(scans_to_avg, "scans_to_avg", default_value=3)
+        smoothings = self._normalize_detector_setting(smoothings, "smoothings", default_value=0)
+        xtimings = self._normalize_detector_setting(xtimings, "xtimings", default_value=1)
         integration_time_testing = list(self.default_integration_time)
         for ndx, spec_key in enumerate(self.spec_keys):
             for _ in range(max_iterations):
@@ -450,16 +561,22 @@ class StellarNetSpectrometer(Device):
             return (False, spec_key + " spectrometer is not found" )
 
     def get_all_spectra_counts(
-            self, 
-            integration_times: Tuple[int, ...] = (100, 100), 
-            scans_to_avg: Tuple[int, ...] = (3, 3), 
-            smoothings: Tuple[int, ...] = (0, 0), 
-            xtimings: Tuple[int, ...] = (1, 1)) -> Tuple[bool, str]:
+            self,
+            integration_times: Optional[Union[int, List[int], Tuple[int, ...]]] = None,
+            scans_to_avg: Union[int, List[int], Tuple[int, ...]] = (3, 3),
+            smoothings: Union[int, List[int], Tuple[int, ...]] = (0, 0),
+            xtimings: Union[int, List[int], Tuple[int, ...]] = (1, 1)) -> Tuple[bool, str]:
 
         # Modify the variable 'spec_keys' if you don't intend to use all spectrometers
         if self.num_spectrometers != len(self.spec_keys):
             return (False, "Spectrometers are not all connected")
 
+        integration_times, scans_to_avg, smoothings, xtimings = self._normalize_measurement_settings(
+            integration_times,
+            scans_to_avg,
+            smoothings,
+            xtimings,
+        )
         spectrum_array_dict = {}
         # print(spec_keys)
         # using self.spec_keys to ensure that the order within the parameter tuple matches the order of the declared spec_keys
@@ -480,11 +597,11 @@ class StellarNetSpectrometer(Device):
 
 
     def update_all_dark_spectra(
-            self, 
-            integration_times: Tuple[int, ...] = (100, 100), 
-            scans_to_avg: Tuple[int, ...] = (3, 3), 
-            smoothings: Tuple[int, ...] = (0, 0), 
-            xtimings: Tuple[int, ...] = (1, 1)) -> Tuple[bool, str]:
+            self,
+            integration_times: Optional[Union[int, List[int], Tuple[int, ...]]] = None,
+            scans_to_avg: Union[int, List[int], Tuple[int, ...]] = (3, 3),
+            smoothings: Union[int, List[int], Tuple[int, ...]] = (0, 0),
+            xtimings: Union[int, List[int], Tuple[int, ...]] = (1, 1)) -> Tuple[bool, str]:
 
         result, spectrum_array_dict = self.get_all_spectra_counts(
                                         integration_times, 
@@ -501,11 +618,11 @@ class StellarNetSpectrometer(Device):
         return (True, "All dark spectra stored")
 
     def update_all_blank_spectra(
-            self, 
-            integration_times: Tuple[int, ...] = (100, 100), 
-            scans_to_avg: Tuple[int, ...] = (3, 3), 
-            smoothings: Tuple[int, ...] = (0, 0), 
-            xtimings: Tuple[int, ...] = (1, 1)) -> Tuple[bool, str]:
+            self,
+            integration_times: Optional[Union[int, List[int], Tuple[int, ...]]] = None,
+            scans_to_avg: Union[int, List[int], Tuple[int, ...]] = (3, 3),
+            smoothings: Union[int, List[int], Tuple[int, ...]] = (0, 0),
+            xtimings: Union[int, List[int], Tuple[int, ...]] = (1, 1)) -> Tuple[bool, str]:
 
         result, spectrum_array_dict = self.get_all_spectra_counts(
                                         integration_times, 
@@ -523,15 +640,19 @@ class StellarNetSpectrometer(Device):
 
     def get_all_absorbance(
             self,
-            save_to_file: bool = False, 
+            save_to_file: bool = False,
             filename: Optional[str] = None,
-            integration_times: Optional[Tuple[int, ...]] = None, 
-            scans_to_avg: Tuple[int, ...] = (3, 3), 
-            smoothings: Tuple[int, ...] = (0, 0), 
-            xtimings: Tuple[int, ...] = (1, 1)) -> Tuple[bool, str]:
+            integration_times: Optional[Union[int, List[int], Tuple[int, ...]]] = None,
+            scans_to_avg: Union[int, List[int], Tuple[int, ...]] = (3, 3),
+            smoothings: Union[int, List[int], Tuple[int, ...]] = (0, 0),
+            xtimings: Union[int, List[int], Tuple[int, ...]] = (1, 1)) -> Tuple[bool, str]:
 
-        if integration_times is None:
-            integration_times = self.default_integration_time
+        integration_times, scans_to_avg, smoothings, xtimings = self._normalize_measurement_settings(
+            integration_times,
+            scans_to_avg,
+            smoothings,
+            xtimings,
+        )
 
         # get the sample spectra
         result, spectrum_array_dict = self.get_all_spectra_counts(
@@ -616,14 +737,18 @@ class StellarNetSpectrometer(Device):
             sample_name: str,
             save_to_file: bool = False,
             repeat_measure: bool = False,
-            integration_times: Optional[Tuple[int, ...]] = None,
-            scans_to_avg: Tuple[int, ...] = (3, 3),
-            smoothings: Tuple[int, ...] = (0, 0),
-            xtimings: Tuple[int, ...] = (1, 1),
+            integration_times: Optional[Union[int, List[int], Tuple[int, ...]]] = None,
+            scans_to_avg: Union[int, List[int], Tuple[int, ...]] = (3, 3),
+            smoothings: Union[int, List[int], Tuple[int, ...]] = (0, 0),
+            xtimings: Union[int, List[int], Tuple[int, ...]] = (1, 1),
             absorbance_threshold: float = 0.003) -> Tuple[bool, str]:
 
-        if integration_times is None:
-            integration_times = self.default_integration_time
+        integration_times, scans_to_avg, smoothings, xtimings = self._normalize_measurement_settings(
+            integration_times,
+            scans_to_avg,
+            smoothings,
+            xtimings,
+        )
 
         filename = sample_name + '_' + datetime.now().strftime('%Y%m%d%H%M%S')
         for attempt in range(3):
@@ -866,15 +991,19 @@ class StellarNetSpectrometer(Device):
             sample_name: str,
             save_to_file: bool = False,
             repeat_measure: bool = False,
-            integration_times: Optional[Tuple[int, ...]] = None,
-            scans_to_avg: Tuple[int, ...] = (3, 3),
-            smoothings: Tuple[int, ...] = (0, 0),
-            xtimings: Tuple[int, ...] = (1, 1),
+            integration_times: Optional[Union[int, List[int], Tuple[int, ...]]] = None,
+            scans_to_avg: Union[int, List[int], Tuple[int, ...]] = (3, 3),
+            smoothings: Union[int, List[int], Tuple[int, ...]] = (0, 0),
+            xtimings: Union[int, List[int], Tuple[int, ...]] = (1, 1),
             absorbance_threshold: float = 0.003) -> Tuple[bool, str]:
 
         del absorbance_threshold
-        if integration_times is None:
-            integration_times = self.default_integration_time
+        integration_times, scans_to_avg, smoothings, xtimings = self._normalize_measurement_settings(
+            integration_times,
+            scans_to_avg,
+            smoothings,
+            xtimings,
+        )
 
         result, spectrum_array_dict = self.get_all_spectra_counts(
             integration_times,
