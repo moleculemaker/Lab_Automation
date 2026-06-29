@@ -1,0 +1,20 @@
+[
+  {
+    "calibration_sample": "rotation_calibration_2",
+    "mode": "ppl",
+    "frame_count": 34,
+    "correction_json": "pg2T-TT\\calibration\\derotation_calibration\\solved_correction.json",
+    "overlay_all_angles": "pg2T-TT\\calibration\\derotation_calibration\\rotation_calibration_2\\overlay_all_angles.png",
+    "derotated_unmasked_contact_sheet": "pg2T-TT\\calibration\\derotation_calibration\\rotation_calibration_2\\derotated_unmasked_contact_sheet.png",
+    "overlay_sharpness": 4.12218359997496e-05
+  },
+  {
+    "calibration_sample": "rotation_calibration_3",
+    "mode": "ppl",
+    "frame_count": 34,
+    "correction_json": "pg2T-TT\\calibration\\derotation_calibration\\solved_correction.json",
+    "overlay_all_angles": "pg2T-TT\\calibration\\derotation_calibration\\rotation_calibration_3\\overlay_all_angles.png",
+    "derotated_unmasked_contact_sheet": "pg2T-TT\\calibration\\derotation_calibration\\rotation_calibration_3\\derotated_unmasked_contact_sheet.png",
+    "overlay_sharpness": 0.00010715328971855342
+  }
+]

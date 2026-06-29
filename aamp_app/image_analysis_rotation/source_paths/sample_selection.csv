@@ -1,0 +1,2 @@
+sample_id,selection_role,excluded_from_final_analysis,reason
+R0S39_Pg2TTT_CB_15mgml_7e-2mms_45C_100um_5ul,primary_webapp_example,false,Strong Afilm A2 signal, low Afilm fit NRMSE, not in the current final-results exclusion set.

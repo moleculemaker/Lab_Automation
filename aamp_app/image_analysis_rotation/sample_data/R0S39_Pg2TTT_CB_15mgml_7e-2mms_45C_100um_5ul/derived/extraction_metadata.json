@@ -1,0 +1,15 @@
+{
+  "sample_id": "R0S39_Pg2TTT_CB_15mgml_7e-2mms_45C_100um_5ul",
+  "sample_type": "pg2tt",
+  "sample_dir": "C:\\Users\\chwang12\\PycharmProjects\\Birefringence_analysis\\pg2T-TT\\data\\imaging\\RAW\\R0S39_Pg2TTT_CB_15mgml_7e-2mms_45C_100um_5ul",
+  "blank_dir": "C:\\Users\\chwang12\\PycharmProjects\\Birefringence_analysis\\pg2T-TT\\data\\imaging\\RAW\\blank",
+  "empty_dir": "C:\\Users\\chwang12\\PycharmProjects\\Birefringence_analysis\\pg2T-TT\\data\\imaging\\RAW\\empty",
+  "dark_dir": "C:\\Users\\chwang12\\PycharmProjects\\Birefringence_analysis\\pg2T-TT\\data\\imaging\\RAW\\dark",
+  "roi_size_fullres": 550,
+  "roi_labels": [
+    "ROI_C"
+  ],
+  "bundle_path": "C:\\Users\\chwang12\\PycharmProjects\\Birefringence_analysis\\pg2T-TT\\analysis\\outputs\\pipeline_550_current\\signals\\R0S39_Pg2TTT_CB_15mgml_7e-2mms_45C_100um_5ul_extraction_bundle.npz",
+  "qc_plot_path": "C:\\Users\\chwang12\\PycharmProjects\\Birefringence_analysis\\pg2T-TT\\analysis\\outputs\\pipeline_550_current\\qc\\R0S39_Pg2TTT_CB_15mgml_7e-2mms_45C_100um_5ul_qc_curves.png",
+  "qc_json_path": "C:\\Users\\chwang12\\PycharmProjects\\Birefringence_analysis\\pg2T-TT\\analysis\\outputs\\pipeline_550_current\\qc\\R0S39_Pg2TTT_CB_15mgml_7e-2mms_45C_100um_5ul_qc_metrics.json"
+}

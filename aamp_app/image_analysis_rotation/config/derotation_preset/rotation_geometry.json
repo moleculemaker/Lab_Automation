@@ -1,0 +1,45 @@
+{
+  "rotation_dir": "pg2T-TT\\data\\imaging\\RAW\\rotation_calibration_3\\ppl",
+  "correction_json": "pg2T-TT\\calibration\\derotation_calibration\\solved_correction.json",
+  "center_xy_fullres": {
+    "x": 1001.8200406419994,
+    "y": 553.677412563412
+  },
+  "mask_erosion_px": 4,
+  "full_mask_area_fraction": 0.4024716545553768,
+  "full_mask_area_px": 896797,
+  "full_mask_bbox": {
+    "x_min": 457,
+    "x_max": 1534,
+    "y_min": 15,
+    "y_max": 1055,
+    "width": 1078,
+    "height": 1041
+  },
+  "largest_axis_aligned_rectangle": {
+    "x": 640,
+    "y": 181,
+    "width": 754,
+    "height": 755,
+    "area": 569270
+  },
+  "largest_axis_aligned_square": {
+    "x": 640,
+    "y": 181,
+    "size": 754,
+    "area": 568516
+  },
+  "largest_centered_square": {
+    "x": 635,
+    "y": 187,
+    "size": 735,
+    "area": 540225
+  },
+  "fits_square_500": true,
+  "fits_centered_square_500": true,
+  "outputs": {
+    "geometry_overlay": "pg2T-TT\\calibration\\derotation_calibration\\rotation_calibration_3\\rotation_geometry_overlay.png",
+    "valid_mask": "pg2T-TT\\calibration\\derotation_calibration\\rotation_calibration_3\\rotation_valid_mask.png",
+    "corrected_preview": "pg2T-TT\\calibration\\derotation_calibration\\rotation_calibration_3\\rotation_corrected_preview.png"
+  }
+}

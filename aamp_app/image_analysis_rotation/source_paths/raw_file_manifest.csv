@@ -1,0 +1,7 @@
+role,path,notes
+sample_raw_dir,pg2T-TT/data/imaging/RAW/R0S39_Pg2TTT_CB_15mgml_7e-2mms_45C_100um_5ul,Representative sample selected for webapp integration testing.
+blank_raw_dir,pg2T-TT/data/imaging/RAW/blank,Required for full raw-pipeline reproduction.
+empty_raw_dir,pg2T-TT/data/imaging/RAW/empty,Required for full raw-pipeline reproduction.
+dark_raw_dir,pg2T-TT/data/imaging/RAW/dark,Required for dark subtraction.
+rotation_calibration_raw_dir,pg2T-TT/data/imaging/RAW/rotation_calibration_3/ppl,Source images used for the distributed derotation geometry QC examples.
+current_pipeline_root,pg2T-TT/analysis/outputs/pipeline_550_current,Source of the derived sample outputs copied into this bundle.

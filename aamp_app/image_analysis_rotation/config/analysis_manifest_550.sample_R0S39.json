@@ -1,0 +1,26 @@
+{
+  "mode_aliases": {
+    "PPL": "ppl",
+    "XPL": "xpl"
+  },
+  "roi_preset_source": "config/roi_550_center.json",
+  "rotation_geometry": "config/derotation_preset/rotation_geometry.json",
+  "rotation_correction": "config/derotation_preset/solved_correction.json",
+  "rotation_valid_mask": "config/derotation_preset/rotation_valid_mask.png",
+  "tile": {
+    "size": 64,
+    "stride": 32,
+    "valid_fraction_threshold": 0.9
+  },
+  "samples": [
+    {
+      "sample_id": "R0S39_Pg2TTT_CB_15mgml_7e-2mms_45C_100um_5ul",
+      "sample_type": "pg2tt",
+      "sample_dir": "pg2T-TT/data/imaging/RAW/R0S39_Pg2TTT_CB_15mgml_7e-2mms_45C_100um_5ul",
+      "blank_dir": "pg2T-TT/data/imaging/RAW/blank",
+      "empty_dir": "pg2T-TT/data/imaging/RAW/empty",
+      "dark_dir": "pg2T-TT/data/imaging/RAW/dark",
+      "roi_size_fullres": 550
+    }
+  ]
+}

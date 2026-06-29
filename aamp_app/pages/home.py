@@ -39,6 +39,7 @@ links = {
     "Solution Map": "/solution-map",
     "Autonomous Run": "/bayesian-optimization",
     "Manual Run": "/manual-run",
+    "Analysis": "/analysis"
     # "Options": "/options",
 }
 

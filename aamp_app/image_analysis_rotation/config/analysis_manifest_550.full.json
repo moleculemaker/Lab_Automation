@@ -1,0 +1,341 @@
+﻿{
+    "mode_aliases":  {
+                         "PPL":  "ppl",
+                         "XPL":  "xpl"
+                     },
+    "roi_preset_source":  "pg2T-TT/analysis/roi_presets/roi_550_center.json",
+    "rotation_geometry":  "pg2T-TT/calibration/derotation_calibration/rotation_calibration_3/rotation_geometry.json",
+    "rotation_correction":  "pg2T-TT/calibration/derotation_calibration/solved_correction.json",
+    "rotation_valid_mask":  "pg2T-TT/calibration/derotation_calibration/rotation_calibration_3/rotation_valid_mask.png",
+    "tile":  {
+                 "size":  64,
+                 "stride":  32,
+                 "valid_fraction_threshold":  0.9
+             },
+    "samples":  [
+                    {
+                        "sample_id":  "R0S18_Pg2TTT_CB_15mgml_3E-2mms_20C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S18_Pg2TTT_CB_15mgml_3E-2mms_20C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S19_Pg2TTT_CB_15mgml_7E-2mms_20C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S19_Pg2TTT_CB_15mgml_7E-2mms_20C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S20_Pg2TTT_CB_15mgml_1E-1mms_20C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S20_Pg2TTT_CB_15mgml_1E-1mms_20C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S21_Pg2TTT_CB_15mgml_1E-1mms_45C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S21_Pg2TTT_CB_15mgml_1E-1mms_45C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S22_Pg2TTT_CB_15mgml_3E-1mms_45C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S22_Pg2TTT_CB_15mgml_3E-1mms_45C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S23_Pg2TTT_CB_15mgml_3E-1mms_65C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S23_Pg2TTT_CB_15mgml_3E-1mms_65C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S31_Pg2TTT_CB_15mgml_1E-1mms_45C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S31_Pg2TTT_CB_15mgml_1E-1mms_45C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S32_Pg2TTT_CB_15mgml_1E-1mms_45C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S32_Pg2TTT_CB_15mgml_1E-1mms_45C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S33_Pg2TTT_CB_15mgml_1E-1mms_45C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S33_Pg2TTT_CB_15mgml_1E-1mms_45C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S34_Pg2TTT_CB_15mgml_5E-1mms_45C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S34_Pg2TTT_CB_15mgml_5E-1mms_45C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S35_Pg2TTT_CB_15mgml_1mms_45C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S35_Pg2TTT_CB_15mgml_1mms_45C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S36_Pg2TTT_CB_15mgml_5mms_45C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S36_Pg2TTT_CB_15mgml_5mms_45C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S37_Pg2TTT_CB_15mgml_10mms_45C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S37_Pg2TTT_CB_15mgml_10mms_45C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S38_Pg2TTT_CB_15mgml_20mms_45C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S38_Pg2TTT_CB_15mgml_20mms_45C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S39_Pg2TTT_CB_15mgml_7e-2mms_45C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S39_Pg2TTT_CB_15mgml_7e-2mms_45C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S40_Pg2TTT_CB_15mgml_5e-2mms_45C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S40_Pg2TTT_CB_15mgml_5e-2mms_45C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S41_Pg2TTT_CB_15mgml_3e-2mms_45C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S41_Pg2TTT_CB_15mgml_3e-2mms_45C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S42_Pg2TTT_CB_25mgml_50mms_20C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S42_Pg2TTT_CB_25mgml_50mms_20C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S43_Pg2TTT_CB_25mgml_30mms_20C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S43_Pg2TTT_CB_25mgml_30mms_20C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S44_Pg2TTT_CB_25mgml_10mms_20C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S44_Pg2TTT_CB_25mgml_10mms_20C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S45_Pg2TTT_CB_25mgml_1mms_20C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S45_Pg2TTT_CB_25mgml_1mms_20C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S46_Pg2TTT_CB_25mgml_5E-1mms_20C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S46_Pg2TTT_CB_25mgml_5E-1mms_20C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S47_Pg2TTT_CB_25mgml_1E-1mms_20C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S47_Pg2TTT_CB_25mgml_1E-1mms_20C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S48_Pg2TTT_CB_25mgml_7E-2mms_20C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S48_Pg2TTT_CB_25mgml_7E-2mms_20C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S49_Pg2TTT_CB_25mgml_5E-2mms_20C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S49_Pg2TTT_CB_25mgml_5E-2mms_20C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S50_Pg2TTT_CB_25mgml_3E-2mms_20C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S50_Pg2TTT_CB_25mgml_3E-2mms_20C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S54_Pg2TTT_CB_25mgml_5E-2mms_45C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S54_Pg2TTT_CB_25mgml_5E-2mms_45C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S55_Pg2TTT_CB_25mgml_7E-2mms_45C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S55_Pg2TTT_CB_25mgml_7E-2mms_45C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S56_Pg2TTT_CB_25mgml_1E-1mms_45C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S56_Pg2TTT_CB_25mgml_1E-1mms_45C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S57_Pg2TTT_CB_25mgml_1E-1mms_65C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S57_Pg2TTT_CB_25mgml_1E-1mms_65C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S58_Pg2TTT_CB_25mgml_7E-2mms_65C_100um_8ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S58_Pg2TTT_CB_25mgml_7E-2mms_65C_100um_8ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S59_Pg2TTT_CB_25mgml_3E-1mms_65C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S59_Pg2TTT_CB_25mgml_3E-1mms_65C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S60_Pg2TTT_CB_25mgml_3E-1mms_85C_100um_6ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S60_Pg2TTT_CB_25mgml_3E-1mms_85C_100um_6ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S61_Pg2TTT_CB_25mgml_2E-1mms_85C_100um_7ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S61_Pg2TTT_CB_25mgml_2E-1mms_85C_100um_7ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S62_Pg2TTT_CB_25mgml_1E-2mms_20C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S62_Pg2TTT_CB_25mgml_1E-2mms_20C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    },
+                    {
+                        "sample_id":  "R0S63_Pg2TTT_CB_25mgml_3E-2mms_45C_100um_5ul",
+                        "sample_type":  "pg2tt",
+                        "sample_dir":  "pg2T-TT/data/imaging/RAW/R0S63_Pg2TTT_CB_25mgml_3E-2mms_45C_100um_5ul",
+                        "blank_dir":  "pg2T-TT/data/imaging/RAW/blank",
+                        "empty_dir":  "pg2T-TT/data/imaging/RAW/empty",
+                        "dark_dir":  "pg2T-TT/data/imaging/RAW/dark",
+                        "roi_size_fullres":  550
+                    }
+                ]
+}

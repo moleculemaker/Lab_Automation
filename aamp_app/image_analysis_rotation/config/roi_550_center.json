@@ -1,0 +1,12 @@
+{
+  "550": {
+    "size": 550,
+    "y": 279,
+    "default": {
+      "type": "single",
+      "x": 727,
+      "y": 279
+    },
+    "sample_overrides": {}
+  }
+}
