@@ -1,7 +1,10 @@
-from typing import Tuple, Optional
+from typing import List, Optional, Tuple, Union
 
 from .command import Command, CommandResult
 from devices.stellarnet_spectrometer import StellarNetSpectrometer
+
+DetectorSetting = Union[int, List[int], Tuple[int, ...]]
+OptionalDetectorSetting = Optional[DetectorSetting]
 
 class SpectrometerParentCommand(Command):
     """Parent class for all StellarNet Spectrometer commands."""
@@ -35,10 +38,10 @@ class SpectrometerUpdateDark(SpectrometerParentCommand):
     def __init__(
             self, 
             receiver: StellarNetSpectrometer, 
-            integration_times: Optional[Tuple[int, ...]] = None, 
-            scans_to_avg: Tuple[int, ...] = (3, 3), 
-            smoothings: Tuple[int, ...] = (0, 0), 
-            xtimings: Tuple[int, ...] = (1, 1),
+            integration_times: OptionalDetectorSetting = None,
+            scans_to_avg: DetectorSetting = (3, 3),
+            smoothings: DetectorSetting = (0, 0),
+            xtimings: DetectorSetting = (1, 1),
             **kwargs):
         super().__init__(receiver, **kwargs)
         self._params['integration_times'] = integration_times
@@ -59,10 +62,10 @@ class SpectrometerUpdateBlank(SpectrometerParentCommand):
     def __init__(
             self, 
             receiver: StellarNetSpectrometer, 
-            integration_times: Optional[Tuple[int, ...]] = None, 
-            scans_to_avg: Tuple[int, ...] = (3, 3), 
-            smoothings: Tuple[int, ...] = (0, 0), 
-            xtimings: Tuple[int, ...] = (1, 1),
+            integration_times: OptionalDetectorSetting = None,
+            scans_to_avg: DetectorSetting = (3, 3),
+            smoothings: DetectorSetting = (0, 0),
+            xtimings: DetectorSetting = (1, 1),
             **kwargs):
         super().__init__(receiver, **kwargs)
         self._params['integration_times'] = integration_times
@@ -81,9 +84,9 @@ class SpectrometerAdjDefIntegrationTime(SpectrometerParentCommand):
     def __init__(
             self,
             receiver: StellarNetSpectrometer,
-            scans_to_avg: Tuple[int, ...] = (3, 3),
-            smoothings: Tuple[int, ...] = (0, 0),
-            xtimings: Tuple[int, ...] = (1, 1),
+            scans_to_avg: DetectorSetting = (3, 3),
+            smoothings: DetectorSetting = (0, 0),
+            xtimings: DetectorSetting = (1, 1),
             target_max_count: int = 52000,
             tolerance: int = 2000,
             **kwargs):
@@ -110,10 +113,10 @@ class SpectrometerGetAbsorbance(SpectrometerParentCommand):
             receiver: StellarNetSpectrometer,
             save_to_file: bool = True, 
             filename: Optional[str] = None,
-            integration_times: Optional[Tuple[int, ...]] = None, 
-            scans_to_avg: Tuple[int, ...] = (3, 3), 
-            smoothings: Tuple[int, ...] = (0, 0), 
-            xtimings: Tuple[int, ...] = (1, 1),
+            integration_times: OptionalDetectorSetting = None,
+            scans_to_avg: DetectorSetting = (3, 3),
+            smoothings: DetectorSetting = (0, 0),
+            xtimings: DetectorSetting = (1, 1),
             **kwargs):
         super().__init__(receiver, **kwargs)
         self._params['save_to_file'] = save_to_file
@@ -139,10 +142,10 @@ class SpectrometerGetAbsorbancebyname(SpectrometerParentCommand):
             sample_name: Optional[str] = None,
             save_to_file: bool = True,
             repeat_measure: bool = False,
-            integration_times: Optional[Tuple[int, ...]] = None,
-            scans_to_avg: Tuple[int, ...] = (3, 3),
-            smoothings: Tuple[int, ...] = (0, 0),
-            xtimings: Tuple[int, ...] = (1, 1),
+            integration_times: OptionalDetectorSetting = None,
+            scans_to_avg: DetectorSetting = (3, 3),
+            smoothings: DetectorSetting = (0, 0),
+            xtimings: DetectorSetting = (1, 1),
             absorbance_threshold: float = 0.003,
             **kwargs):
         super().__init__(receiver, **kwargs)
@@ -173,10 +176,10 @@ class SpectrometerGetPhotoncountsbyname(SpectrometerParentCommand):
             sample_name: Optional[str] = None,
             save_to_file: bool = True,
             repeat_measure: bool = False,
-            integration_times: Optional[Tuple[int, ...]] = None,
-            scans_to_avg: Tuple[int, ...] = (3, 3),
-            smoothings: Tuple[int, ...] = (0, 0),
-            xtimings: Tuple[int, ...] = (1, 1),
+            integration_times: OptionalDetectorSetting = None,
+            scans_to_avg: DetectorSetting = (3, 3),
+            smoothings: DetectorSetting = (0, 0),
+            xtimings: DetectorSetting = (1, 1),
             absorbance_threshold: float = 0.003,
             **kwargs):
         super().__init__(receiver, **kwargs)

@@ -27,6 +27,17 @@ from .device import Device, check_initialized
 class StellarNetSpectrometer(Device):
     SUPPORTED_SPEC_KEYS = ("UV-Vis", "NIR")
     save_directory = 'data/spectroscopy/'
+    MERGE_UV_START = 210.0
+    MERGE_NIR_END = 1700.0
+    MERGE_OVERLAP_START = 900.0
+    MERGE_OVERLAP_END = 1030.0
+    MERGE_WINDOW_NM = 10.0
+    MERGE_RAW_ABS_TOLERANCE = 0.01
+    MERGE_SIGNAL_MIN_P95 = 0.02
+    MERGE_SCALE_MIN = 0.5
+    MERGE_SCALE_MAX = 2.0
+    MERGE_SCALE_FIT_MEDIAN_TOLERANCE = 0.02
+    MERGE_FIXED_CROSSOVER_NM = 900.0
 
     def __init__(
             self,
@@ -1365,57 +1376,224 @@ class StellarNetSpectrometer(Device):
     # hard coded for UV-Vis and NIR
     # what happens if only 1 spectrometer is connected/being used?
     def merge_absorbance(self, save_to_file: bool, filename: str, comment_list: List[str]) -> Tuple[bool, str]:
-        uv_wavelength = np.squeeze(self.wavelength_dict['UV-Vis'].copy())
-        nir_wavelength = np.squeeze(self.wavelength_dict['NIR'].copy())
-        uv_absorbance = np.squeeze(self.absorbance_dict['UV-Vis'][:,1].copy())
-        nir_absorbance = np.squeeze(self.absorbance_dict['NIR'][:,1].copy())
+        result, merge_output = self.merge_uv_nir_absorbance_arrays(
+            self.absorbance_dict['UV-Vis'],
+            self.absorbance_dict['NIR'],
+        )
+        if not result:
+            return (False, merge_output)
 
-        # start and end of overlapping regions
-        WAVE_START = 900.0
-        WAVE_END = 1030.0
+        self.merged_absorbance = merge_output["merged_array"]
+        metadata = merge_output["metadata"]
 
-        merge_result = minimize(self.merge_error, [1, 0], args=(uv_wavelength, uv_absorbance, nir_wavelength, nir_absorbance, WAVE_START, WAVE_END), method='BFGS')
+        if save_to_file:
+            os.makedirs(self.save_directory, exist_ok=True)
+            data = pd.DataFrame()
+            data['Wavelength'] = np.squeeze(self.merged_absorbance[:, 0].copy())
+            data['Absorbance'] = np.squeeze(self.merged_absorbance[:, 1].copy())
 
-        if not merge_result:
-            return (False, "Failed to merge UV-Vis and NIR absorbance spectra: " + merge_result.message)
-        else:
-            scale = merge_result.x[0]
-            shift = merge_result.x[1]
+            fullfilename = os.path.join(self.save_directory, filename + '_merged.csv')
+            comment_list = list(comment_list)
+            comment_list.append("# merge_method = qc_stitch_scale_only\n")
+            comment_list.append("# merge_mode = " + str(metadata["merge_mode"]) + "\n")
+            comment_list.append("# merge_reason = " + str(metadata["merge_reason"]) + "\n")
+            comment_list.append("# crossover_nm = " + str(metadata["crossover_nm"]) + "\n")
+            comment_list.append("# scale = " + str(metadata["scale"]) + "\n")
+            comment_list.append("# shift = " + str(metadata["shift"]) + "\n")
+            comment_list.append("# overlap_range_nm = " + str((metadata["overlap_start_nm"], metadata["overlap_end_nm"])) + "\n")
+            comment_list.append("# uv_overlap_p95 = " + str(metadata["uv_overlap_p95"]) + "\n")
+            comment_list.append("# best_raw_window_diff = " + str(metadata["best_raw_window_diff"]) + "\n")
+            comment_list.append("# scale_only = " + str(metadata["scale_only"]) + "\n")
+            comment_list.append("# scaled_median_diff = " + str(metadata["scaled_median_diff"]) + "\n")
+            comment_list.append("# negative_values_clipped = " + str(metadata["negative_values_clipped"]) + "\n")
+            with open(fullfilename, 'w') as file:
+                file.writelines(comment_list)
+            data.to_csv(fullfilename, mode='a', index_label='Index')
 
-            # uv is not modified, nir is adjusted to match uv
-            uv_array = self.absorbance_dict['UV-Vis'].copy()
-            nir_wavelength = self.wavelength_dict['NIR'].copy()
+        return (
+            True,
+            "Successfully merged UV-Vis and NIR absorbance spectra using "
+            + str(metadata["merge_mode"])
+        )
 
-            nir_absorbance = np.expand_dims(self.scale_shift_data([scale, shift], self.absorbance_dict['NIR'][:,1].copy()), axis=1)
-            nir_array = np.hstack((nir_wavelength, nir_absorbance))
+    @staticmethod
+    def _best_window_median_diff(
+            wavelengths,
+            y1,
+            y2,
+            window_nm: float,
+            min_points: int = 5) -> Tuple[float, float]:
+        best_diff = float('inf')
+        best_wavelength = float('nan')
+        for wavelength in wavelengths:
+            window_index = np.abs(wavelengths - wavelength) <= window_nm
+            if np.count_nonzero(window_index) < min_points:
+                continue
+            median_diff = float(np.median(np.abs(y1[window_index] - y2[window_index])))
+            if median_diff < best_diff:
+                best_diff = median_diff
+                best_wavelength = float(wavelength)
+        return best_diff, best_wavelength
 
-            UV_START = 210.0
-            UV_END = 1030.0
-            NIR_START = 900.0
-            NIR_END = 1700.0
+    @staticmethod
+    def _sanitize_absorbance_array(array) -> np.ndarray:
+        clean_array = np.asarray(array, dtype=float)
+        if clean_array.ndim != 2 or clean_array.shape[1] < 2:
+            raise ValueError("Absorbance array must have at least two columns.")
+        clean_array = clean_array[:, :2]
+        valid_index = np.isfinite(clean_array[:, 0]) & np.isfinite(clean_array[:, 1])
+        clean_array = clean_array[valid_index]
+        return clean_array[clean_array[:, 0].argsort()]
 
-            uv_array = self.truncate_ends_by_wavelength(uv_array, UV_START, UV_END)
-            nir_array = self.truncate_ends_by_wavelength(nir_array, NIR_START, NIR_END)
+    @staticmethod
+    def merge_uv_nir_absorbance_arrays(uv_array, nir_array) -> Tuple[bool, Union[dict, str]]:
+        try:
+            uv_array = StellarNetSpectrometer._sanitize_absorbance_array(uv_array)
+            nir_array = StellarNetSpectrometer._sanitize_absorbance_array(nir_array)
+        except ValueError as exc:
+            return (False, str(exc))
 
-            merged_array = np.vstack((uv_array, nir_array))
-            merged_array = merged_array[merged_array[:,0].argsort()]
-            self.merged_absorbance = merged_array
-            
-            if save_to_file:
-                os.makedirs(self.save_directory, exist_ok=True)
-                data = pd.DataFrame()
-                data['Wavelength'] = np.squeeze(self.merged_absorbance[:,0].copy())
-                data['Absorbance'] = np.squeeze(self.merged_absorbance[:,1].copy())
+        overlap_start = StellarNetSpectrometer.MERGE_OVERLAP_START
+        overlap_end = StellarNetSpectrometer.MERGE_OVERLAP_END
+        overlap_index = (nir_array[:, 0] >= overlap_start) & (nir_array[:, 0] <= overlap_end)
+        overlap_wavelength = nir_array[overlap_index, 0].copy()
+        nir_overlap = nir_array[overlap_index, 1].copy()
+        uv_overlap = StellarNetSpectrometer._linear_interpolate(
+            uv_array[:, 0],
+            uv_array[:, 1],
+            overlap_wavelength,
+        )
 
-                fullfilename = self.save_directory + filename + '_merged.csv'
-                comment_list.append("# To merge, NIR data is scaled first then shifted\n")
-                comment_list.append("# scale = " + str(scale) + "\n")
-                comment_list.append("# shift = " + str(shift) + "\n")
-                with open(fullfilename, 'w') as file:
-                    file.writelines(comment_list)
-                data.to_csv(fullfilename, mode='a', index_label='Index')
+        valid_overlap = np.isfinite(overlap_wavelength) & np.isfinite(uv_overlap) & np.isfinite(nir_overlap)
+        overlap_wavelength = overlap_wavelength[valid_overlap]
+        uv_overlap = uv_overlap[valid_overlap]
+        nir_overlap = nir_overlap[valid_overlap]
 
-            return (True, "Successfully merged UV-Vis and NIR absorbance spectra: " + merge_result.message)
+        metadata = {
+            "merge_mode": "fixed_stitch_invalid_overlap",
+            "merge_reason": "not enough valid overlap points",
+            "overlap_start_nm": overlap_start,
+            "overlap_end_nm": overlap_end,
+            "window_nm": StellarNetSpectrometer.MERGE_WINDOW_NM,
+            "raw_abs_tolerance": StellarNetSpectrometer.MERGE_RAW_ABS_TOLERANCE,
+            "signal_min_p95": StellarNetSpectrometer.MERGE_SIGNAL_MIN_P95,
+            "scale_min": StellarNetSpectrometer.MERGE_SCALE_MIN,
+            "scale_max": StellarNetSpectrometer.MERGE_SCALE_MAX,
+            "scale_fit_median_tolerance": StellarNetSpectrometer.MERGE_SCALE_FIT_MEDIAN_TOLERANCE,
+            "uv_overlap_p95": float('nan'),
+            "uv_overlap_median": float('nan'),
+            "nir_overlap_p95": float('nan'),
+            "best_raw_window_diff": float('inf'),
+            "best_raw_window_nm": float('nan'),
+            "scale_only": float('nan'),
+            "scaled_median_diff": float('nan'),
+            "best_scaled_window_diff": float('inf'),
+            "best_scaled_window_nm": float('nan'),
+            "scale": 1.0,
+            "shift": 0.0,
+            "crossover_nm": StellarNetSpectrometer.MERGE_FIXED_CROSSOVER_NM,
+            "negative_values_clipped": 0,
+        }
+
+        if overlap_wavelength.size >= 10:
+            uv_p95 = float(np.percentile(uv_overlap, 95))
+            nir_p95 = float(np.percentile(nir_overlap, 95))
+            raw_diff, raw_nm = StellarNetSpectrometer._best_window_median_diff(
+                overlap_wavelength,
+                uv_overlap,
+                nir_overlap,
+                StellarNetSpectrometer.MERGE_WINDOW_NM,
+            )
+            denom = float(np.sum(nir_overlap * nir_overlap))
+            scale_only = float(np.sum(uv_overlap * nir_overlap) / denom) if denom > 0 else float('nan')
+            scaled_overlap = nir_overlap * scale_only if np.isfinite(scale_only) else np.full_like(nir_overlap, np.nan)
+            scaled_median_diff = (
+                float(np.median(np.abs(uv_overlap - scaled_overlap)))
+                if np.all(np.isfinite(scaled_overlap))
+                else float('nan')
+            )
+            scaled_window_diff, scaled_nm = StellarNetSpectrometer._best_window_median_diff(
+                overlap_wavelength,
+                uv_overlap,
+                scaled_overlap,
+                StellarNetSpectrometer.MERGE_WINDOW_NM,
+            )
+
+            metadata.update({
+                "uv_overlap_p95": uv_p95,
+                "uv_overlap_median": float(np.median(uv_overlap)),
+                "nir_overlap_p95": nir_p95,
+                "best_raw_window_diff": raw_diff,
+                "best_raw_window_nm": raw_nm,
+                "scale_only": scale_only,
+                "scaled_median_diff": scaled_median_diff,
+                "best_scaled_window_diff": scaled_window_diff,
+                "best_scaled_window_nm": scaled_nm,
+            })
+
+            if uv_p95 < StellarNetSpectrometer.MERGE_SIGNAL_MIN_P95:
+                metadata.update({
+                    "merge_mode": "fixed_stitch_low_overlap_signal",
+                    "merge_reason": "UV overlap signal is too low for reliable fitting",
+                    "crossover_nm": StellarNetSpectrometer.MERGE_FIXED_CROSSOVER_NM,
+                    "scale": 1.0,
+                    "shift": 0.0,
+                })
+            elif raw_diff <= StellarNetSpectrometer.MERGE_RAW_ABS_TOLERANCE:
+                metadata.update({
+                    "merge_mode": "raw_stitch",
+                    "merge_reason": "raw UV and NIR spectra match within window tolerance",
+                    "crossover_nm": raw_nm if np.isfinite(raw_nm) else StellarNetSpectrometer.MERGE_FIXED_CROSSOVER_NM,
+                    "scale": 1.0,
+                    "shift": 0.0,
+                })
+            elif (
+                    np.isfinite(scale_only)
+                    and StellarNetSpectrometer.MERGE_SCALE_MIN <= scale_only <= StellarNetSpectrometer.MERGE_SCALE_MAX
+                    and scaled_median_diff <= StellarNetSpectrometer.MERGE_SCALE_FIT_MEDIAN_TOLERANCE):
+                metadata.update({
+                    "merge_mode": "scale_only_stitch",
+                    "merge_reason": "raw spectra do not meet tolerance; scale-only fit is within bounds",
+                    "crossover_nm": scaled_nm if np.isfinite(scaled_nm) else StellarNetSpectrometer.MERGE_FIXED_CROSSOVER_NM,
+                    "scale": scale_only,
+                    "shift": 0.0,
+                })
+            else:
+                metadata.update({
+                    "merge_mode": "fixed_stitch_unreliable_fit",
+                    "merge_reason": "raw match and scale-only fit did not pass QC",
+                    "crossover_nm": StellarNetSpectrometer.MERGE_FIXED_CROSSOVER_NM,
+                    "scale": 1.0,
+                    "shift": 0.0,
+                })
+
+        uv_part = StellarNetSpectrometer.truncate_ends_by_wavelength(
+            uv_array,
+            StellarNetSpectrometer.MERGE_UV_START,
+            float(metadata["crossover_nm"]),
+        )
+        nir_adjusted = nir_array.copy()
+        nir_adjusted[:, 1] = StellarNetSpectrometer.scale_shift_data(
+            [float(metadata["scale"]), float(metadata["shift"])],
+            nir_adjusted[:, 1],
+        )
+        nir_part = nir_adjusted[
+            np.logical_and(
+                nir_adjusted[:, 0] > float(metadata["crossover_nm"]),
+                nir_adjusted[:, 0] < StellarNetSpectrometer.MERGE_NIR_END,
+            )
+        ]
+
+        if uv_part.size == 0 or nir_part.size == 0:
+            return (False, "Unable to stitch UV-Vis and NIR arrays with crossover " + str(metadata["crossover_nm"]))
+
+        merged_array = np.vstack((uv_part, nir_part))
+        merged_array = merged_array[merged_array[:, 0].argsort()]
+        negative_index = merged_array[:, 1] < 0
+        metadata["negative_values_clipped"] = int(np.count_nonzero(negative_index))
+        merged_array[negative_index, 1] = 0.0
+
+        return (True, {"merged_array": merged_array, "metadata": metadata})
 
     # y and return are ndarrays
     @staticmethod
