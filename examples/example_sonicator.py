@@ -50,7 +50,7 @@ def main() -> None:
     seq.add_command(SonicatorGetStatus(sonicator))
     seq.add_command(SonicatorStartSonicating(sonicator))
     seq.add_command(SonicatorGetStatus(sonicator, delay=2.0))
-    seq.add_command(SonicatorStopSonicating(sonicator, delay=5.0))
+    seq.add_command(SonicatorStopSonicating(sonicator, delay=30.0))
     seq.add_command(SonicatorGetStatus(sonicator))
     seq.add_command(SonicatorDeinitialize(sonicator, close_serial=True))
 
