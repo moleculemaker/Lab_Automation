@@ -1,3 +1,4 @@
 *
 !.gitignore
 !ch_apis_imaging_from_mongodb.py
+!example_mongodb_recipe_lookup.py

@@ -15,10 +15,16 @@
 !example_p4pp.py
 !example_apis.py
 !example_apis_from_mongodb.py
+!example_film_characterization.py
+!example_psd6_syringe_pump.py
+!example_psd6_1ml_suction_test.py
+!example_psd6_cleaning_solvent_test.py
 !example_stellarnet_spectrometer.py
 !example_uvvis_film_absorbance_degradation.py
 !example_sciencetech_uhe_nl_solar_sim.py
 !example_festo_solenoid_valve.py
+!example_p4pp_rotation_sweep.py
+!example_printing_recipe.py
 !example_sonicator.py
 !example_substrate_hotel.py
 !example_substrate_dispenser.py

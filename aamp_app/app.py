@@ -2950,7 +2950,7 @@ def generate_parameter_sets(n_clicks, campaign_name, polymer_name, smiles_string
                     else:
                         log_speed = log_min + random.random() * (log_max - log_min)
 
-                    motor_speed = round(10 ** log_speed, 2)
+                    motor_speed = round(10 ** log_speed, 3)
                 else:
                     motor_speed = random.choice(motor_speeds) if motor_speeds else random.choice(MOTOR_SPEEDS_D)
 
@@ -3108,20 +3108,21 @@ def save_parameter_sets_to_mongo(n_clicks, parameter_sets, gpc_data, campaign_na
             image_id = fs.put(decoded, filename=image_filename)
 
         existing_campaign = mongo.db.campaigns.find_one({"campaign_name": campaign_name})
-        pipeline = [
-            {"$group": {"_id": None, "max_value": {"$max": "$batch_no"}}}
-        ]
-        
-        try:
-            result = list(mongo.db.sets.aggregate(pipeline))
-            max_value = result[0]["max_value"] if result else None
-        except (IndexError, KeyError):
-            max_value = None
-        
-        batch_no = max_value + 1 if max_value is not None else 1
 
         if existing_campaign:
             campaign_id = existing_campaign["_id"]
+            pipeline = [
+                {"$match": {"campaign_id": campaign_id}},
+                {"$group": {"_id": None, "max_value": {"$max": "$batch_no"}}}
+            ]
+
+            try:
+                result = list(mongo.db.sets.aggregate(pipeline))
+                max_value = result[0]["max_value"] if result else None
+            except (IndexError, KeyError):
+                max_value = None
+
+            batch_no = max_value + 1 if max_value is not None else 1
             update_data = {}
             
             if gpc_data:
@@ -3175,6 +3176,7 @@ def save_parameter_sets_to_mongo(n_clicks, parameter_sets, gpc_data, campaign_na
 
             campaign_result = mongo.db.campaigns.insert_one(campaign_doc)
             campaign_id = campaign_result.inserted_id
+            batch_no = 1
 
             sets_to_insert = [{
                 "campaign_id": campaign_id,
